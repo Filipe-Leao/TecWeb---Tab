@@ -58,117 +58,6 @@ function rollDice() {
 }
 
 // Função principal: possíveis movimentos
-/*
-function possible_movements(selectedPiece) {
-    if (!selectedPiece || diceValue === 0) {
-        alert("Deves lançar o dado antes de mover uma peça!");
-        return;
-    }
-
-    const currentSquare = selectedPiece.parentElement;
-    const row = parseInt(currentSquare.dataset.row);
-    const col = parseInt(currentSquare.dataset.col);
-    const color = selectedPiece.classList.contains('piece_red') ? 'red' : 'blue';
-
-    // Verifica se é a vez certa
-    if (color !== playerTurn) {
-        alert("Não é a tua vez!");
-        return;
-    }
-
-    // Verifica se é a primeira jogada dessa peça
-    const isStartingRow = (color === 'red' && row === 0) || (color === 'blue' && row === 3);
-    if (isStartingRow && !selectedPiece.dataset.moved) {
-        if (diceValue !== 1) {
-            if (diceValue === 4 || diceValue === 6) {
-                alert("Saiu 4 ou 6 — repete o lançamento!");
-            } else {
-                alert("Só podes sair com 1 (Tâb).");
-            }
-
-            diceValue = 0;
-            return diceValue;
-        }
-    }
-
-    // Direção de movimento depende da linha
-    // 1ª e 3ª: esquerda -> direita
-    // 2ª e 4ª: direita -> esquerda
-    let dir = 1;
-    if (row === 1 || row === 3) dir = -1;
-
-    let targetRow = row;
-    let targetCol = col + dir * diceValue;
-
-    // Se sair do limite, passa para a linha seguinte
-    if (targetCol >= numSquares || targetCol < 0) {
-        if (row === 0) targetRow = 1;        // 1ª → 2ª
-        else if (row === 1) targetRow = 2;   // 2ª → 3ª
-        else if (row === 2) targetRow = 3;   // 3ª → 4ª
-        else if (row === 3) targetRow = 2;   // 4ª → 3ª
-
-        // Corrigir a coluna após transição
-        if (dir === 1) targetCol = targetCol - numSquares;  // saiu pela direita
-        else targetCol = numSquares + targetCol;            // saiu pela esquerda
-    }
-
-    // Restrições: movimento na 4ª fila
-    if (targetRow === 3 && color === 'red') {
-        const redHomePieces = document.querySelectorAll('.piece_red').length;
-        if (redHomePieces > 0 && document.querySelector('[data-row="0"] .piece_red')) {
-            alert("Não podes mover na 4ª fila enquanto houver peças na tua fila inicial!");
-            return;
-        }
-    }
-
-    if (targetRow === 0 && color === 'blue') {
-        const blueHomePieces = document.querySelectorAll('.piece_blue').length;
-        if (blueHomePieces > 0 && document.querySelector('[data-row="3"] .piece_blue')) {
-            alert("Não podes mover na 1ª fila enquanto houver peças na tua fila inicial!");
-            return;
-        }
-    }
-
-    // Verifica casa de destino
-    const targetSquare = document.querySelector(
-        `[data-row="${targetRow}"][data-col="${targetCol}"]`
-    );
-
-    if (!targetSquare) {
-        alert("Movimento fora do tabuleiro!");
-        return;
-    }
-
-    highlight(targetSquare)
-
-    // Se houver peça da mesma cor, movimento inválido
-    if (
-        (color === 'red' && targetSquare.querySelector('.piece_red')) ||
-        (color === 'blue' && targetSquare.querySelector('.piece_blue'))
-    ) {
-        alert("Casa ocupada por uma peça tua!");
-        return;
-    }
-
-    // Captura de peça inimiga
-    const enemyPiece = targetSquare.querySelector('.piece_red, .piece_blue');
-    if (enemyPiece) {
-        alert(`${color} capturou uma peça inimiga!`);
-        enemyPiece.remove();
-    }
-
-    // Movimento
-    targetSquare.appendChild(selectedPiece);
-    selectedPiece.dataset.moved = "true"; // marca que já se moveu
-    diceValue = 0; // reset dado
-    clearHighlights();
-
-    // Alternar turno
-    playerTurn = playerTurn === 'red' ? 'blue' : 'red';
-    alert(`Agora é a vez do jogador ${playerTurn.toUpperCase()}.`);
-}
-*/
-
 function move(row, col, diceValue){
     return true;
 
@@ -248,7 +137,6 @@ function handleClick_player_vs_player(e) {
 
 function handleClick(e) {
     const square = e.currentTarget;
-    
     if (diceValue === 0) {
         diceValue = rollDice();
         return; // espera o jogador escolher uma peça depois
@@ -269,6 +157,7 @@ function handleClick(e) {
         square.appendChild(selectedPiece);
         clearHighlights();
         selectedPiece = null;
+        diceValue = 0;
     }
 }
 
