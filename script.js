@@ -14,6 +14,8 @@ function createBoard() {
     for (let i = 0; i < numLines; i++) {
         matrix[i] = new Array(numSquares)
         for (let j = 0; j < numSquares; j++) {
+            matrix[i][j] = 0;
+
             const square = document.createElement('div');
             square.classList.add('square');
             square.dataset.index = j;
@@ -24,13 +26,13 @@ function createBoard() {
             if (j < maxPieces && i == numLines - 1) {
                 const piece = document.createElement('div');
                 piece.classList.add('piece_blue');
-                matrix[i][j] = 2;
+                matrix[i][j] = 2; // Casa ocupada por Azul
                 square.appendChild(piece);
             }
             else if ((j > numSquares - 1 - maxPieces) && (i == 0)) {
                 const piece = document.createElement('div');
                 piece.classList.add('piece_red');
-                matrix[i][j] = 1;
+                matrix[i][j] = 1; // Casa ocupada por Vermelho
                 square.appendChild(piece);
             }
             square.addEventListener('click', handleClick);
@@ -59,71 +61,81 @@ function rollDice() {
 }
 
 // Função principal: possíveis movimentos
-async function move(row, col, diceValue, can_go_up, square){
+async function move(row, col, diceValue, can_go_up, pieceElement, originalSquareElement) {
+    let targetRow = parseInt(row);
+    let targetCol = parseInt(col);
     let direction = 0;
-    if (row === 1 || row === 3){
-        direction = -1;
-    }
-    else if (row === 0 || row === 2){
-        direction = 1;
+
+    for (let k = 0; k < diceValue; k++) {
+        if (targetRow === 1 || targetRow === 3) {
+            direction = -1; // Direita para a Esquerda
+        } else if (targetRow === 0 || targetRow === 2) {
+            direction = 1; // Esquerda para a Direita
+        }
+
+        // Move um passo
+        targetCol += direction;
+
+        // Verifica as fronteiras
+        if (targetCol < 0 || targetCol >= numSquares) {
+            if (targetRow === 0) { // Sai da linha 0
+                targetRow = 1;
+                targetCol = numSquares - 1; // Entra na linha 1
+            } else if (targetRow === 1) { // Sai da linha 1
+                targetRow = 2;
+                targetCol = 0; // Entra na linha 2
+            } else if (targetRow === 2) { // Sai da linha 2
+                let moveChoice = 'down'; // Default
+                if (can_go_up) {
+                    moveChoice = await askDirection();
+                }
+
+                if (moveChoice === 'up') {
+                    targetRow = 3; // Vai para a linha 4 (índice 3)
+                    targetCol = numSquares - 1; // Entra na linha 3
+                } else { // 'down'
+                    targetRow = 1; // Volta para a linha 2 (índice 1)
+                    targetCol = numSquares - 1; // Entra na linha 1
+                }
+            } else if (targetRow === 3) { // Sai da linha 3
+                targetRow = 2;
+                targetCol = 0; // Volta para a linha 2
+            }
+        }
     }
 
-    let targetRow = row;
-    let targetCol = col + direction;
-    for (let k = 0; k < diceValue; k++){
-        if (targetCol < 0 || targetCol >= numSquares){
-            if (targetRow === 0){
-                targetRow++; 
-                targetCol = numSquares - 1;
-                direction = -1;
-            }
-            else if (targetRow === 1){
-                targetRow++;
-                targetCol = 0;
-                direction = 1;
-            }
-            else if (targetRow === 2){
-                if (can_go_up){
-                    const move = await askDirection();
-                    if (move === 'up'){
-                        targetRow++;
-                    }
-                    else if (move === 'down'){
-                        targetRow--;
-                    }
-                    else{
-                        alert(`Erro na escolha da direção de movimento`);
-                    }
-                }
-                else {
-                    targetRow--;
-                }
-                targetCol = numSquares - 1;
-                direction = -1;
-            }
-            else if (targetRow === 3){
-                targetRow--;
-                targetCol = 0;
-                direction = 1;
-            }
-        }
-        else{
-            targetCol += direction;
-        }
-    }  
-    if (matrix[targetRow][targetCol] === matrix[row][col]){
-        alert(`Não pode mover esta peça, existe uma peça sua na casa que se iria mover`);
+    // Pega o valor da peça (1 para 'red', 2 para 'blue')
+    const pieceValue = matrix[row][col];
+
+    // Verifica se a casa de destino tem uma peça do PRÓPRIO jogador
+    if (matrix[targetRow][targetCol] === pieceValue) {
+        alert("Não pode mover esta peça, existe uma peça sua na casa de destino.");
         return false;
     }
-    else if (matrix[targetRow][targetCol] === 0){
-        matrix[targetRow][targetCol] = matrix[row][col];
-        return true;
+
+    // Encontra o elemento DOM da casa de destino
+    const targetSquare = document.querySelector(`.square[data-row='${targetRow}'][data-col='${targetCol}']`);
+    if (!targetSquare) {
+        alert("Erro: Casa de destino não encontrada no DOM.");
+        return false;
     }
-    else{
-        alert(`Capturou uma peça do seu adversário`);
-        matrix[targetRow][targetCol] = matrix[row][col];
-        return true;
+
+    // Verifica se é uma captura
+    if (matrix[targetRow][targetCol] !== 0) {
+        alert("Capturou uma peça do seu adversário!");
+        targetSquare.innerHTML = ''; // Remove a peça capturada do DOM
     }
+
+    targetSquare.appendChild(pieceElement);     // Move a peça no DOM
+    matrix[targetRow][targetCol] = pieceValue;  // Atualiza a 'matrix' de destino
+    matrix[row][col] = 0;                       // Limpa a 'matrix' de origem
+
+    // Limpa o highlight do quadrado original (se houver)
+    if (originalSquareElement) {
+        originalSquareElement.style.backgroundColor = '#eee';
+    }
+
+    return true; // Movimento foi bem-sucedido
 }
 
 function askDirection(){
@@ -205,43 +217,45 @@ function handleClick_player_vs_player(e) {
 
 
 async function handleClick(e) {
-    const square = e.currentTarget;
+    const square = e.currentTarget; // O quadrado clicado
+
+    // Se o dado não foi lançado, lança o dado.
     if (diceValue === 0) {
         diceValue = rollDice();
-        return; // espera o jogador escolher uma peça depois
-    }
-    // Se clicar numa peça vermelha
-    if (square.querySelector('.piece_red')) {
-        selectedPiece = square.querySelector('.piece_red');
-        highlight(square);
+        return; // Espera o jogador escolher uma peça
     }
 
-    else if (square.querySelector('.piece_blue')){
-        alert(`escolheste peça de oponente`);
-        return;
-    }
-    /* 
-     * Não se utiliza no Player vs PC
-     *
-    // Se clicar numa peça azul
-    else if (square.querySelector('.piece_blue')) {
-        selectedPiece = square.querySelector('.piece_blue');
-        highlight(square);
-    }
-    */
-    // Se já tiver uma peça selecionada e clicar noutro quadrado vazio
-    if (selectedPiece) {
-        const originalSquare = selectedPiece.parentElement;
-        let row = originalSquare.dataset.row;
-        let col = originalSquare.dataset.col;
-        const can_move = move(row, col, diceValue, diceValue, true, originalSquare);
-        if (can_move === true){
-            square.appendChild(selectedPiece);
+    // Verifica se o jogador clicou numa peça vermelha (assumindo que é a vez do 'red')
+    const piece = square.querySelector('.piece_red');
+    if (piece) {
+        // Se sim, vamos tentar movê-la.
+        const row = parseInt(square.dataset.row);
+        const col = parseInt(square.dataset.col);
+
+        const can_go_up = true;
+        const moveSuccess = await move(row, col, diceValue, can_go_up, piece, square);
+
+        if (moveSuccess) {
+            // Verifica se repete a jogada
+            if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
+                // Passa a vez
+                alert("Vez do adversário (computador)");
+                playerTurn = 'blue'; // (Exemplo de troca de turno)
+            } else {
+                alert("Joga novamente!");
+                // O playerTurn continua 'red'
+            }
+
+            // Reseta o dado para o próximo turno/jogada
+            diceValue = 0;
+            clearHighlights(); // Limpa quaisquer destaques
         }
-        clearHighlights();
-        selectedPiece = null;
-        diceValue = 0;
-        return;
+    } else {
+        if (square.querySelector('.piece_blue')) {
+            alert("Essa é uma peça do oponente!");
+        } else {
+            alert("Selecione uma peça vermelha para mover.");
+        }
     }
 }
 
