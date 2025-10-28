@@ -25,12 +25,20 @@ function createBoard() {
             // Adiciona peças nas 3 primeiras casas
             if (j < maxPieces && i == numLines - 1) {
                 const piece = document.createElement('div');
+
+                piece.dataset.top_column = false; // Se passou pela coluna de cima
+                piece.dataset.first_move = true; // Se é o primeiro movimento da peça
+
                 piece.classList.add('piece_blue');
                 matrix[i][j] = 2; // Casa ocupada por Azul
                 square.appendChild(piece);
             }
             else if ((j > numSquares - 1 - maxPieces) && (i == 0)) {
                 const piece = document.createElement('div');
+
+                piece.dataset.top_column = false; // Se passou pela coluna de cima
+                piece.dataset.first_move = true; // Se é o primeiro movimento da peça
+
                 piece.classList.add('piece_red');
                 matrix[i][j] = 1; // Casa ocupada por Vermelho
                 square.appendChild(piece);
@@ -66,11 +74,29 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
     let targetCol = parseInt(col);
     let direction = 0;
 
+    if (pieceElement.dataset.first_move === 'true' && diceValue === 1) {
+        pieceElement.dataset.first_move = 'false';
+    }
+    else if (pieceElement.dataset.first_move === 'true') {
+        alert("No primeiro movimento, só se pode mover 1 casa.");
+        if (diceValue === 4 || diceValue === 6){
+            return true;  // Movimento inválido mas pode repetir
+        }
+        return false;
+    }
+
     for (let k = 0; k < diceValue; k++) {
+        if (pieceElement.dataset.first_move === 'true') {
+            pieceElement.dataset.first_move = 'false';
+            if (targetRow === 0 && targetCol === numSquares - 1) {
+                targetCol -= 1; // Move uma casa para a esquerda
+            }
+        }
+
         if (targetRow === 1 || targetRow === 3) {
-            direction = -1; // Direita para a Esquerda
-        } else if (targetRow === 0 || targetRow === 2) {
             direction = 1; // Esquerda para a Direita
+        } else if (targetRow === 0 || targetRow === 2) {
+            direction = -1; // Direita para a Esquerda
         }
 
         // Move um passo
@@ -80,26 +106,25 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
         if (targetCol < 0 || targetCol >= numSquares) {
             if (targetRow === 0) { // Sai da linha 0
                 targetRow = 1;
-                targetCol = numSquares - 1; // Entra na linha 1
+                targetCol = 0; // Entra na linha 1
             } else if (targetRow === 1) { // Sai da linha 1
-                targetRow = 2;
-                targetCol = 0; // Entra na linha 2
-            } else if (targetRow === 2) { // Sai da linha 2
                 let moveChoice = 'down'; // Default
-                if (can_go_up) {
+                if (pieceElement.dataset.top_column === 'false' && targetCol >= numSquares) {
                     moveChoice = await askDirection();
                 }
-
                 if (moveChoice === 'up') {
-                    targetRow = 3; // Vai para a linha 4 (índice 3)
+                    targetRow = 0; // Vai para a linha 2 (índice 1)
                     targetCol = numSquares - 1; // Entra na linha 3
                 } else { // 'down'
-                    targetRow = 1; // Volta para a linha 2 (índice 1)
+                    targetRow = 2; // Volta para a linha 3 (índice 2)
                     targetCol = numSquares - 1; // Entra na linha 1
                 }
-            } else if (targetRow === 3) { // Sai da linha 3
+            } else if (targetRow === 2) { // Sai da linha 3
+                targetRow = 1;
+                targetCol = 0; // Entra na linha 2
+            } else if (targetRow === 3) { // Sai da linha 4
                 targetRow = 2;
-                targetCol = 0; // Volta para a linha 2
+                targetCol = 0; // Volta para a linha 3
             }
         }
     }
@@ -196,7 +221,6 @@ function handleClick_player_vs_player(e) {
     } 
     // Se já tiver uma peça selecionada e clicar num quadrado vazio
     else {
-        
         if (can_move){
             square.appendChild(selectedPiece);
             selectedPiece = null;
@@ -249,6 +273,11 @@ async function handleClick(e) {
             // Reseta o dado para o próximo turno/jogada
             diceValue = 0;
             clearHighlights(); // Limpa quaisquer destaques
+        }
+        else{
+            alert("Vez do adversário (computador)");
+            playerTurn = 'blue';
+            diceValue = 0;
         }
     } else {
         if (square.querySelector('.piece_blue')) {
