@@ -1,12 +1,46 @@
 // Criar tabuleiro
 const board = document.getElementById('board');
+const moveSelector = document.getElementById('moveSelector');
+const moveUpBtn = document.getElementById('move_up');
+const moveDownBtn = document.getElementById('move_down');
+
+const dicePanel = document.getElementById('dice-panel');
+const diceSticks = document.querySelectorAll('#dice-sticks .stick');
+const diceValueDisplay = document.getElementById('dice-value-display');
+const diceMessage = document.getElementById('dice-message');
+
+const messageBar = document.getElementById('message-bar');
+const turnIndicator = document.getElementById('turn-indicator');
+const turnPlayerDisplay = document.getElementById('turn-player-display');
+
 const numSquares = 12;
 const maxPieces = 12;
 const numLines = 4;
 let selectedPiece = null;
-let diceValue = 0; // valor do dado atual
-let playerTurn = 'red'; // começa jogador vermelho
-let matrix = null
+let diceValue = 0;
+let playerTurn = 'red';
+let matrix = null;
+
+// Variável de controlo para a Promise do askDirection
+let resolveAskDirection = null;
+
+// Função para mostrar mensagens ao jogador
+function showMessage(message, type = 'info') {
+    messageBar.textContent = message;
+    messageBar.className = type;
+}
+
+// Função para atualizar o indicador de turno
+function updateTurnIndicator() {
+    if (playerTurn === 'red') {
+        turnPlayerDisplay.textContent = 'Vermelho';
+        turnIndicator.className = 'red';
+    } else {
+        turnPlayerDisplay.textContent = 'Azul (PC)';
+        turnIndicator.className = 'blue';
+    }
+}
+
 
 // Função de criar o tabuleiro
 function createBoard() {
@@ -15,60 +49,76 @@ function createBoard() {
         matrix[i] = new Array(numSquares)
         for (let j = 0; j < numSquares; j++) {
             matrix[i][j] = 0;
-
             const square = document.createElement('div');
             square.classList.add('square');
             square.dataset.index = j;
             square.dataset.row = i;
             square.dataset.col = j;
-
-            // Adiciona peças nas 3 primeiras casas
             if (j < maxPieces && i == numLines - 1) {
                 const piece = document.createElement('div');
-
-                piece.dataset.top_column = false; // Se passou pela coluna de cima
-                piece.dataset.first_move = true; // Se é o primeiro movimento da peça
-
+                piece.dataset.top_column = false;
+                piece.dataset.first_move = true;
                 piece.classList.add('piece_blue');
-                matrix[i][j] = 2; // Casa ocupada por Azul
+                matrix[i][j] = 2;
                 square.appendChild(piece);
             }
             else if ((j > numSquares - 1 - maxPieces) && (i == 0)) {
                 const piece = document.createElement('div');
-
-                piece.dataset.top_column = false; // Se passou pela coluna de cima
-                piece.dataset.first_move = true; // Se é o primeiro movimento da peça
-
+                piece.dataset.top_column = false;
+                piece.dataset.first_move = true;
                 piece.classList.add('piece_red');
-                matrix[i][j] = 1; // Casa ocupada por Vermelho
+                matrix[i][j] = 1;
                 square.appendChild(piece);
             }
             square.addEventListener('click', handleClick);
             board.appendChild(square);
         }
     }
+    // Atualiza o indicador de turno no início
+    updateTurnIndicator();
 }
 
-// Função para lançar dado (0-4)
+// Função para lançar dado
 function rollDice() {
     let tab = 0;
     for (let i = 0; i < 4; i++){
         let prob = Math.random();
         if (prob >= 0.50){
             tab++;
+            diceSticks[i].className = 'stick claro';
+        } else {
+            diceSticks[i].className = 'stick escuro';
         }
     }
-    alert(`tab ${tab}`);
+
     if (tab === 0){
         diceValue = 6;
     }
     else{
         diceValue = tab;
     }
+
+    diceValueDisplay.textContent = diceValue;
+    diceMessage.textContent = `Selecione uma peça para mover.`;
+    showMessage(`Dado lançado: ${diceValue}! Selecione uma peça.`);
+
     return diceValue;
 }
 
-// Função principal: possíveis movimentos
+// Função para lidar com o clique no painel do dado
+function handleDiceRoll() {
+    if (diceValue !== 0) {
+        showMessage("Já lançou o dado. Mova uma peça!", 'error');
+        return;
+    }
+    if (playerTurn !== 'red') {
+        showMessage("É a vez do computador!", 'error');
+        return;
+    }
+    rollDice();
+}
+
+// Função 'move' retorna 3 estados: 'success', 'reroll_only', 'fail'
 async function move(row, col, diceValue, can_go_up, pieceElement, originalSquareElement) {
     let targetRow = parseInt(row);
     let targetCol = parseInt(col);
@@ -78,232 +128,207 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
         pieceElement.dataset.first_move = 'false';
     }
     else if (pieceElement.dataset.first_move === 'true') {
-        alert("No primeiro movimento, só se pode mover 1 casa.");
+        showMessage("No primeiro movimento, só se pode mover 1 casa.", 'error');
         if (diceValue === 4 || diceValue === 6){
-            return true;  // Movimento inválido mas pode repetir
+            return 'reroll_only';
         }
-        return false;
+        return 'fail';
     }
 
+    //
     for (let k = 0; k < diceValue; k++) {
         if (pieceElement.dataset.first_move === 'true') {
             pieceElement.dataset.first_move = 'false';
             if (targetRow === 0 && targetCol === numSquares - 1) {
-                targetCol -= 1; // Move uma casa para a esquerda
+                targetCol -= 1;
             }
         }
-
         if (targetRow === 1 || targetRow === 3) {
-            direction = 1; // Esquerda para a Direita
+            direction = 1;
         } else if (targetRow === 0 || targetRow === 2) {
-            direction = -1; // Direita para a Esquerda
+            direction = -1;
         }
-
-        // Move um passo
         targetCol += direction;
-
-        // Verifica as fronteiras
         if (targetCol < 0 || targetCol >= numSquares) {
-            if (targetRow === 0) { // Sai da linha 0
+            if (targetRow === 0) {
                 targetRow = 1;
-                targetCol = 0; // Entra na linha 1
-            } else if (targetRow === 1) { // Sai da linha 1
-                let moveChoice = 'down'; // Default
+                targetCol = 0;
+            } else if (targetRow === 1) {
+                let moveChoice = 'down';
                 if (pieceElement.dataset.top_column === 'false' && targetCol >= numSquares) {
                     moveChoice = await askDirection();
                 }
                 if (moveChoice === 'up' && pieceElement.dataset.top_column === 'false') {
                     pieceElement.dataset.top_column = 'true';
-                    targetRow = 0; // Vai para a linha 2 (índice 1)
-                    targetCol = numSquares - 1; // Entra na linha 3
-                } else { // 'down'
-                    targetRow = 2; // Volta para a linha 3 (índice 2)
-                    targetCol = numSquares - 1; // Entra na linha 1
+                    targetRow = 0;
+                    targetCol = numSquares - 1;
+                } else {
+                    targetRow = 2;
+                    targetCol = numSquares - 1;
                 }
-            } else if (targetRow === 2) { // Sai da linha 3
+            } else if (targetRow === 2) {
                 targetRow = 1;
-                targetCol = 0; // Entra na linha 2
-            } else if (targetRow === 3) { // Sai da linha 4
+                targetCol = 0;
+            } else if (targetRow === 3) {
                 targetRow = 2;
-                targetCol = 0; // Volta para a linha 3
+                targetCol = 0;
             }
         }
     }
-
-    // Pega o valor da peça (1 para 'red', 2 para 'blue')
     const pieceValue = matrix[row][col];
-
-    // Verifica se a casa de destino tem uma peça do PRÓPRIO jogador
     if (matrix[targetRow][targetCol] === pieceValue) {
-        alert("Não pode mover esta peça, existe uma peça sua na casa de destino.");
-        return false;
+        showMessage("Não pode mover, existe uma peça sua na casa de destino.", 'error');
+        return 'fail';
     }
-
-    // Encontra o elemento DOM da casa de destino
     const targetSquare = document.querySelector(`.square[data-row='${targetRow}'][data-col='${targetCol}']`);
     if (!targetSquare) {
-        alert("Erro: Casa de destino não encontrada no DOM.");
-        return false;
+        showMessage("Erro: Casa de destino não encontrada no DOM.", 'error');
+        return 'fail';
     }
-
-    // Verifica se é uma captura
     if (matrix[targetRow][targetCol] !== 0) {
-        alert("Capturou uma peça do seu adversário!");
-        targetSquare.innerHTML = ''; // Remove a peça capturada do DOM
+        showMessage("Capturou uma peça do seu adversário!", 'info');
+        targetSquare.innerHTML = '';
     }
-
-    targetSquare.appendChild(pieceElement);     // Move a peça no DOM
-    matrix[targetRow][targetCol] = pieceValue;  // Atualiza a 'matrix' de destino
-    matrix[row][col] = 0;                       // Limpa a 'matrix' de origem
-
-    // Limpa o highlight do quadrado original (se houver)
+    targetSquare.appendChild(pieceElement);
+    matrix[targetRow][targetCol] = pieceValue;
+    matrix[row][col] = 0;
     if (originalSquareElement) {
         originalSquareElement.style.backgroundColor = '#eee';
     }
-
-    return true; // Movimento foi bem-sucedido
+    return 'success';
 }
 
+// Função para limpar o painel de dados
+function resetDiceUI() {
+    diceValue = 0;
+    diceValueDisplay.textContent = "-";
+    diceMessage.textContent = "Clique aqui para lançar";
+    diceSticks.forEach(stick => stick.className = 'stick');
+
+    // Garante que o indicador de turno está correto
+    updateTurnIndicator();
+}
+
+// Função para pedir direção ao jogador
 function askDirection(){
-        return new Promise((resolve) => {
-        const container = document.createElement('div');
-        container.classList.add('choice-container');
-
-        const upBtn = document.createElement('button');
-        upBtn.textContent = "Mover para cima";
-        const downBtn = document.createElement('button');
-        downBtn.textContent = "Mover para baixo";
-
-        upBtn.addEventListener('click', () => {
-            container.remove();
-            resolve('up');
-        });
-        downBtn.addEventListener('click', () => {
-            container.remove();
-            resolve('down');
-        });
-
-        container.appendChild(upBtn);
-        container.appendChild(downBtn);
-        document.body.appendChild(container);
+    return new Promise((resolve) => {
+        moveSelector.style.display = 'grid';
+        resolveAskDirection = resolve;
     });
 }
 
-//ideia inicial não necessário para o primeiro trabalho
-function handleClick_player_vs_player(e) {
+// Função para lidar com o clique numa casa
+async function handleClick(e) {
     const square = e.currentTarget;
 
-    // Se ainda não há dado lançado, lança
     if (diceValue === 0) {
-        diceValue = rollDice();
-        return; // espera o jogador escolher uma peça depois
+        showMessage("Clique no painel 'Dado de Paus' para lançar o dado primeiro!", 'error');
+        return;
+    }
+    if (playerTurn !== 'red') {
+        showMessage("É a vez do computador, por favor aguarde.", 'error');
+        return;
     }
 
-    if (!selectedPiece){
-        let piece = null;
-        // Se clicar numa peça
-        if (square.querySelector('.piece_red') && playerTurn === 'red'){
-            piece = square.querySelector('.piece_red');
-        }
-        else if (square.querySelector('.piece_blue') && playerTurn === 'blue'){
-            piece = square.querySelector('piece_blue');
-        }
-        else{
-            alert(`Player $(playerTurn) must choose $(playerTurn) color pieces`);
-            return;;
-        }
-    
-    
-        if (piece) {
-            selectedPiece = piece;
-            highlight(square);
-            return;
-        }
-    } 
-    // Se já tiver uma peça selecionada e clicar num quadrado vazio
-    else {
-        if (can_move){
-            square.appendChild(selectedPiece);
-            selectedPiece = null;
-            // se o valor do dado for 1, 4 ou 6 repete o se não é outro jogador
-            if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6){
-                if (playerTurn === 'red'){
-                    playerTurn = 'blue';
-                }
-                else{
-                    playerTurn = 'red';
-                }
-            }
-            diceValue = 0;
-            clearHighlights();
-        }
-    }
-}
-
-
-async function handleClick(e) {
-    const square = e.currentTarget; // O quadrado clicado
-
-    // Se o dado não foi lançado, lança o dado.
-    if (diceValue === 0) {
-        diceValue = rollDice();
-        return; // Espera o jogador escolher uma peça
-    }
-
-    // Verifica se o jogador clicou numa peça vermelha (assumindo que é a vez do 'red')
     const piece = square.querySelector('.piece_red');
     if (piece) {
-        // Se sim, vamos tentar movê-la.
         const row = parseInt(square.dataset.row);
         const col = parseInt(square.dataset.col);
-
         const can_go_up = true;
-        const moveSuccess = await move(row, col, diceValue, can_go_up, piece, square);
 
-        if (moveSuccess) {
-            // Verifica se repete a jogada
-            if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
-                // Passa a vez
-                alert("Vez do adversário (computador)");
-                playerTurn = 'blue'; // (Exemplo de troca de turno)
-            } else {
-                alert("Joga novamente!");
-                // O playerTurn continua 'red'
-            }
+        const moveResult = await move(row, col, diceValue, can_go_up, piece, square);
 
-            // Reseta o dado para o próximo turno/jogada
-            diceValue = 0;
-            clearHighlights(); // Limpa quaisquer destaques
+        switch (moveResult) {
+            case 'success':
+                clearHighlights();
+                if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
+                    // SUCESSO e PASSA A VEZ
+                    showMessage("Movimento bem-sucedido. A passar a vez ao computador...");
+                    handleAITurn(); // Chama o turno do PC
+                } else {
+                    // SUCESSO e JOGA DE NOVO
+                    showMessage("Movimento bem-sucedido! Joga novamente. Clique no dado.");
+                    resetDiceUI(); // Reseta para o jogador lançar de novo
+                }
+                break;
+
+            case 'reroll_only':
+                // FALHA (1º mov) mas JOGA DE NOVO (dado 4 ou 6)
+                showMessage("Joga novamente! Clique no dado.");
+                resetDiceUI(); // Reseta para o jogador lançar de novo
+                break;
+
+            case 'fail':
+                // FALHA e NÃO JOGA DE NOVO (dado 2 ou 3)
+                const movedPieces = document.querySelectorAll('.piece_red[data-first_move="false"]');
+
+                if (movedPieces.length === 0) {
+                    // Está preso (só peças na base)
+                    showMessage("Não tem jogadas válidas. A passar a vez ao computador...", 'error');
+                    handleAITurn(); // Chama o turno do PC
+                } else {
+                    // Não está preso
+                    showMessage("Tente mover outra peça (uma que já não esteja na base).", 'error');
+                }
+                break;
         }
-        else{
-            alert("Vez do adversário (computador)");
-            playerTurn = 'blue';
-            diceValue = 0;
-        }
+
     } else {
         if (square.querySelector('.piece_blue')) {
-            alert("Essa é uma peça do oponente!");
+            showMessage("Essa é uma peça do oponente!", 'error');
         } else {
-            alert("Selecione uma peça vermelha para mover.");
+            showMessage("Selecione uma peça vermelha para mover.", 'error');
         }
     }
 }
 
+// Função para lidar com o turno do PC
+function handleAITurn() {
+    playerTurn = 'blue';
+    updateTurnIndicator();
+    showMessage("É a vez do computador... o 'Azul' está a pensar...");
 
-// Destacar quadrado selecionado
+    // Simula um atraso de 1.5 segundos
+    setTimeout(() => {
+        // O PC não faz nada, apenas passa a vez.
+        // (No futuro, colocar a lógica da IA aqui)
+
+        showMessage("O computador 'Azul' jogou. É a sua vez.");
+        playerTurn = 'red';
+        resetDiceUI(); // Prepara o dado para o jogador 'red'
+    }, 1500); // 1500ms = 1.5 segundos
+}
+
+// Funções de destaque
 function highlight(square) {
     clearHighlights();
     square.style.backgroundColor = '#ffc';
 }
 
-// Limpar destaque
 function clearHighlights() {
     document.querySelectorAll('.square').forEach(sq => {
         sq.style.backgroundColor = '#eee';
     });
 }
 
+moveUpBtn.addEventListener('click', () => {
+    if (resolveAskDirection) {
+        moveSelector.style.display = 'none'; // Esconde o seletor
+        resolveAskDirection('up');       // Resolve a Promise com 'up'
+        resolveAskDirection = null;        // Limpa a variável
+    }
+});
+
+moveDownBtn.addEventListener('click', () => {
+    if (resolveAskDirection) {
+        moveSelector.style.display = 'none'; // Esconde o seletor
+        resolveAskDirection('down');     // Resolve a Promise com 'down'
+        resolveAskDirection = null;      // Limpa a variável
+    }
+});
 
 
-createBoard()
+dicePanel.addEventListener('click', handleDiceRoll);
 
+// Inicia o jogo
+createBoard();

@@ -3,20 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <title>Jogo Tâb</title>
-        <link rel="stylesheet" href="style.css">
-    </head>
-    <body>
-        <h1>Jogo Tâb</h1>
-        <div id="board"></div>
-        <div id="moveSelector">
-            <ol>
-                <button id='move_up'>Move UP</button>
-            </ol>
-            <ol>
-                <button id= 'move_down'> Move Down</button>
-            </ol>
-        </div>
-        <script src="script.js"></script>
-    </body>
-</html>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Jogo Tâb</h1>
 
+<div id="message-bar" class="info">
+    Bem-vindo! Clique no dado para começar.
+</div>
+
+<div class="game-container">
+
+    <div id="board"></div>
+
+    <div id="dice-panel">
+
+        <div id="turn-indicator">
+            <span>Vez do Jogador</span>
+            <strong id="turn-player-display">Vermelho</strong>
+        </div>
+
+        <h3>Dado de Paus</h3>
+        <div id="dice-sticks">
+            <div class="stick"></div>
+            <div class="stick"></div>
+            <div class="stick"></div>
+            <div class="stick"></div>
+        </div>
+        <div id="dice-result">
+            <span>Valor:</span>
+            <strong id="dice-value-display">-</strong>
+        </div>
+        <p id="dice-message">Clique aqui para lançar</p>
+    </div>
+
+</div> <div id="moveSelector">
+    <ol>
+        <button id='move_up'>Move UP</button>
+    </ol>
+    <ol>
+        <button id='move_down'> Move Down</button>
+    </ol>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
