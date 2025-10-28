@@ -112,7 +112,8 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
                 if (pieceElement.dataset.top_column === 'false' && targetCol >= numSquares) {
                     moveChoice = await askDirection();
                 }
-                if (moveChoice === 'up') {
+                if (moveChoice === 'up' && pieceElement.dataset.top_column === 'false') {
+                    pieceElement.dataset.top_column = 'true';
                     targetRow = 0; // Vai para a linha 2 (índice 1)
                     targetCol = numSquares - 1; // Entra na linha 3
                 } else { // 'down'
