@@ -291,8 +291,8 @@ body {
 .square {
     width: 50px;
     height: 50px;
-    background-color: #eee;
-    border: 1px solid #999;
+    background-color: white !important; /* branco */
+    border: 2px solid #8b5a5a; /* mesma borda */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -344,8 +344,8 @@ body {
 #dice-panel {
     width: 200px;
     padding: 15px;
-    background-color: #f0f0f0;
-    border: 1px solid #999;
+    background-color: rgba(200, 160, 150, 0.92); /* mesma cor do login */
+    border: 2px solid #8b5a5a;
     border-radius: 8px;
     text-align: center;
     cursor: default;
@@ -353,13 +353,14 @@ body {
 }
 
 #dice-panel:hover {
-    background-color: #e9e9e9;
+    background-color: rgba(200, 160, 150, 1);
 }
 
 #dice-panel h3 {
     margin-top: 0;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 2px solid #8b5a5a;
     padding-bottom: 10px;
+    color: #5a3a3a; /* mesma cor das letras do login */
 }
 
 #dice-sticks {
@@ -399,19 +400,20 @@ body {
 #dice-result {
     margin: 20px 0;
     font-size: 1.2em;
+    color: #5a3a3a;
 }
 
 #dice-value-display {
     font-size: 2.5em;
     font-weight: bold;
-    color: #c0392b;
+    color: #8b5a5a; /* tom bordô */
     display: block;
     margin-top: 5px;
 }
 
 #dice-message {
     font-style: italic;
-    color: #555;
+    color: #5a3a3a;
     margin-bottom: 0;
 }
 
@@ -426,15 +428,15 @@ body {
 }
 
 #message-bar.info {
-    background-color: #e0f7fa;
-    color: #004d40;
-    border: 1px solid #004d40;
+    background-color: rgba(200, 160, 150, 0.92); /* mesma cor do login */
+    color: #5a3a3a; /* mesma cor das letras do login */
+    border: 2px solid #8b5a5a;
 }
 
 #message-bar.error {
-    background-color: #ffebee;
+    background-color: rgba(200, 160, 150, 0.92);
     color: #c62828;
-    border: 1px solid #c62828;
+    border: 2px solid #8b5a5a;
 }
 
 #turn-indicator {
@@ -442,21 +444,31 @@ body {
     border-radius: 8px;
     margin-bottom: 15px;
     transition: background-color 0.3s;
+    background-color: rgba(180, 130, 120, 0.85);
+    border: 2px solid #8b5a5a;
 }
 #turn-indicator span {
     display: block;
     font-size: 0.9em;
-    color: #444;
+    color: #3d2020;
 }
 #turn-indicator strong {
     font-size: 1.5em;
+    color: #5a3a3a;
 }
 
-#turn-indicator.red {
-    background-color: #ffebee;
-    color: #c62828;
+#turn-indicator.red strong {
+    color: brown; /* mesma cor da peça vermelha */
 }
-#turn-indicator.blue {
-    background-color: #e3f2fd;
-    color: #1565c0;
+
+#turn-indicator.blue strong {
+    color: blue; /* mesma cor da peça azul */
+}
+
+/* Estilos da página do jogo */
+.game-page {
+    display: block;
+    background-color: #d4b5a8; /* mesma cor da página de login */
+    min-height: 100vh;
+    padding: 20px;
 }
