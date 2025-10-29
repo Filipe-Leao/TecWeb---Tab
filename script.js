@@ -1,3 +1,58 @@
+// Login
+const loginForm = document.getElementById('loginForm');
+const loginPage = document.getElementById('loginPage');
+const gamePage = document.getElementById('gamePage');
+
+loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    if (username && password) {
+        sessionStorage.setItem('username', username);
+        loginPage.classList.add('oculto');
+        gamePage.classList.remove('oculto');
+        createBoard(); // Cria o tabuleiro após login
+    } else {
+        alert('Por favor, preencha todos os campos.');
+    }
+});
+
+// Overlay
+const overlay = document.getElementById('overlay');
+
+// Regras
+const btnRegras = document.getElementById('btnRegras');
+const regras = document.getElementById('regras');
+const btnFecharRegras = document.getElementById('btnFecharRegras');
+
+btnRegras.addEventListener('click', () => {
+    regras.classList.add('regras-visiveis');
+    overlay.classList.add('ativo');
+});
+
+btnFecharRegras.addEventListener('click', () => {
+    regras.classList.remove('regras-visiveis');
+    overlay.classList.remove('ativo');
+});
+
+// Classificações
+const btnClassificacoes = document.getElementById('btnClassificacoes');
+const classificacoes = document.getElementById('classificacoes');
+const btnFecharClassificacoes = document.getElementById('btnFecharClassificacoes');
+
+btnClassificacoes.addEventListener('click', () => {
+    classificacoes.classList.add('classificacoes-visiveis');
+    overlay.classList.add('ativo');
+});
+
+btnFecharClassificacoes.addEventListener('click', () => {
+    classificacoes.classList.remove('classificacoes-visiveis');
+    overlay.classList.remove('ativo');
+});
+
+
 // Criar tabuleiro
 const board = document.getElementById('board');
 const moveSelector = document.getElementById('moveSelector');
@@ -330,5 +385,3 @@ moveDownBtn.addEventListener('click', () => {
 
 dicePanel.addEventListener('click', handleDiceRoll);
 
-// Inicia o jogo
-createBoard();

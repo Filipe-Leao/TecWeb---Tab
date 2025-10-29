@@ -6,46 +6,117 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>Jogo Tâb</h1>
+    <!-- Página de Login (visível inicialmente) -->
+    <div id="loginPage" class="login-page">
+        <header class="main-header">
+            <h1 class="game-title">JOGO TÂB</h1>
+        </header>
 
-<div id="message-bar" class="info">
-    Bem-vindo! Clique no dado para começar.
-</div>
+        <nav class="main-nav">
+            <button id="btnRegras" class="nav-btn">REGRAS</button>
+            <button id="btnClassificacoes" class="nav-btn">CLASSIFICAÇÕES</button>
+        </nav>
 
-<div class="game-container">
+        <div id="overlay" class="overlay"></div>
 
-    <div id="board"></div>
-
-    <div id="dice-panel">
-
-        <div id="turn-indicator">
-            <span>Vez do Jogador</span>
-            <strong id="turn-player-display">Vermelho</strong>
+        <div id="regras" class="regras-ocultas">
+            <h2>Regras</h2>
+            <p>Texto das regras (ainda a ser definido)</p>
+            <button id="btnFecharRegras">Fechar</button>
         </div>
 
-        <h3>Dado de Paus</h3>
-        <div id="dice-sticks">
-            <div class="stick"></div>
-            <div class="stick"></div>
-            <div class="stick"></div>
-            <div class="stick"></div>
+        <div id="classificacoes" class="classificacoes-ocultas">
+            <h2>Classificações</h2>
+            <h2>(mero exemplo)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Posição</th>
+                        <th>Jogador</th>
+                        <th>Vitórias</th>
+                        <th>Derrotas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1º</td>
+                        <td>Jogador 1</td>
+                        <td>10</td>
+                        <td>2</td>
+                    </tr>
+                    <tr>
+                        <td>2º</td>
+                        <td>Jogador 2</td>
+                        <td>8</td>
+                        <td>4</td>
+                    </tr>
+                    <!-- Adicione mais linhas conforme necessário -->
+                </tbody>
+            </table>
+            <button id="btnFecharClassificacoes">Fechar</button>
         </div>
-        <div id="dice-result">
-            <span>Valor:</span>
-            <strong id="dice-value-display">-</strong>
+
+        <div class="login-container">
+            <h2>LOG-IN</h2>
+            <form id="loginForm">
+                <label for="username">USER</label>
+                <input type="text" id="username" placeholder="Insert your username" required>
+                
+                <label for="password">SENHA</label>
+                <input type="password" id="password" placeholder="Insert your password" required>
+                
+                <button type="submit" class="btn-enviar">ENVIAR</button>
+            </form>
         </div>
-        <p id="dice-message">Clique aqui para lançar</p>
     </div>
 
-</div> <div id="moveSelector">
-    <ol>
-        <button id='move_up'>Move UP</button>
-    </ol>
-    <ol>
-        <button id='move_down'> Move Down</button>
-    </ol>
-</div>
+    <!-- Página do Jogo (oculta inicialmente) -->
+    <div id="gamePage" class="game-page oculto">
 
-<script src="script.js"></script>
+        <h1>Jogo Tâb</h1>
+
+        <div id="message-bar" class="info">
+            Bem-vindo! Clique no dado para começar.
+        </div>
+
+        <div class="game-container">
+
+            <div id="board"></div>
+
+            <div id="dice-panel">
+
+                <div id="turn-indicator">
+                    <span>Vez do Jogador</span>
+                    <strong id="turn-player-display">Vermelho</strong>
+                </div>
+
+                <h3>Dado de Paus</h3>
+                <div id="dice-sticks">
+                    <div class="stick"></div>
+                    <div class="stick"></div>
+                    <div class="stick"></div>
+                    <div class="stick"></div>
+                </div>
+                <div id="dice-result">
+                    <span>Valor:</span>
+                    <strong id="dice-value-display">-</strong>
+                </div>
+                <p id="dice-message">Clique aqui para lançar</p>
+            </div>
+
+        </div>
+        
+        <div id="moveSelector">
+            <ol>
+                <button id='move_up'>Move UP</button>
+            </ol>
+            <ol>
+                <button id='move_down'>Move Down</button>
+            </ol>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
