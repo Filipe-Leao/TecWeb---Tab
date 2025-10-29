@@ -337,21 +337,32 @@ async function handleClick(e) {
     }
 }
 
-// Função para lidar com o turno do PC
+// A função de turno do computador passou a ser fornecida pelo MonteCarlo.js.
+// Certifica-te que `MonteCarlo.js` está incluído antes deste ficheiro (index.html já atualizado).
+// Se por algum motivo MonteCarlo não estiver disponível, podemos fornecer um fallback simples.
 function handleAITurn() {
+    // Preferir a função de Monte Carlo se disponível (não queremos sobrescrever a definição original).
+    if (typeof window.handleAITurn_MonteCarloRandom === 'function') {
+        console.log("Usando Monte Carlo para o turno do computador.");
+        diceValue = 0;
+        console.log("Before ai turn", diceValue)
+        // Chama a versão Monte Carlo (ela controla rerolls/turn switching internamente)
+        handleDiceRoll();
+
+        console.log("Dice value for AI turn:", diceValue);
+
+        return window.handleAITurn_MonteCarloRandom(25, diceValue);
+    }
+
+    // Fallback (comportamento antigo): passa a vez após pequena espera.
     playerTurn = 'blue';
     updateTurnIndicator();
     showMessage("É a vez do computador... o 'Azul' está a pensar...");
-
-    // Simula um atraso de 1.5 segundos
     setTimeout(() => {
-        // O PC não faz nada, apenas passa a vez.
-        // (No futuro, colocar a lógica da IA aqui)
-
         showMessage("O computador 'Azul' jogou. É a sua vez.");
         playerTurn = 'red';
-        resetDiceUI(); // Prepara o dado para o jogador 'red'
-    }, 1500); // 1500ms = 1.5 segundos
+        resetDiceUI();
+    }, 1500);
 }
 
 // Funções de destaque
