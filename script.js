@@ -177,6 +177,8 @@ function handleDiceRoll() {
 async function move(row, col, diceValue, can_go_up, pieceElement, originalSquareElement) {
     let targetRow = parseInt(row);
     let targetCol = parseInt(col);
+
+    console.log("Initial position:", targetRow, targetCol, pieceElement);
     let direction = 0;
 
     if (pieceElement.dataset.first_move === 'true' && diceValue === 1) {
@@ -226,7 +228,7 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
                 targetCol = 0;
             } else if (targetRow === 3) {
                 targetRow = 2;
-                targetCol = 0;
+                targetCol = numSquares - 1;
             }
         }
     }

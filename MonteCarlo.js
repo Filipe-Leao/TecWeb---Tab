@@ -170,7 +170,7 @@ function legalMovesForDice(state, playerValue, diceValue) {
                             targetRow = 1; targetCol = 0;
                             nextStates.push({ row: targetRow, col: targetCol, top_column: s.top_column, first_move: firstMoveLocal });
                         } else if (targetRow === 3) {
-                            targetRow = 2; targetCol = 0;
+                            targetRow = 2; targetCol = NUM_COLS - 1;
                             nextStates.push({ row: targetRow, col: targetCol, top_column: s.top_column, first_move: firstMoveLocal });
                         }
                     } else {
@@ -302,6 +302,9 @@ async function monteCarloEvaluateMoves(simulationsPerMove = 50, diceValueForThis
     const legal = legalMovesForDice(baseState, aiPlayerValue, diceValue);
 
     console.log(`IA Monte Carlo: ${legal.length} jogadas legais com dado ${diceValue}.`);
+    if (legal.length > 0) {
+        console.log("Primeiro movimento legal:", legal[0]);
+    }
 
     if (legal.length === 0) {
         return { action: null, diceValue }; // nada a fazer
@@ -336,9 +339,10 @@ async function monteCarloEvaluateMoves(simulationsPerMove = 50, diceValueForThis
 
 // Esta função faz o turno do AI: rola o dado (visualmente), escolhe jogada (aleatória/MC) e chama move()
 async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue) {
+    console.log("AI Turn começou com diceValue:", diceValue);
     // bloqueia se já houver diceValue (evita sobrescrever se jogador ainda não jogou)
     if (diceValue !== 0) {
-        // já existe um dado lançado — respeita isso e usa-o
+        console.log("Usando diceValue existente:", diceValue);
     } else {
         // rola o dado para a IA e actualiza UI (mantendo a tua UI)
         const val = rollDiceForAI(); // valor puramente lógico
@@ -353,7 +357,7 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
 
     // avalia jogadas
     const { action, diceValue: usedDice, winrate } = await monteCarloEvaluateMoves(simulationsPerMove, diceValue);
-
+    diceValue = usedDice;
     if (!action) {
         if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
             showMessage("Azuis não têm jogadas válidas. A passar a vez ao jogador.", 'info');
@@ -363,15 +367,15 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
             return;
         }
         else {
-            showMessage("Azuis não têm jogadas válidas mas podem rerolar. A passar a vez ao jogador.", 'info');
-            console.log("AI could reroll but for simplicity passes the turn.");
+            showMessage("Azuis não têm jogadas válidas mas podem rerolar.", 'info');
+            console.log("AI rerolls since it has no valid moves but dice is 1/4/6");
             diceValue = 0;
+            setTimeout(3000); // pequena pausa para o jogador ver a mensagem
             resetDiceUI();
             updateTurnIndicator();
-            handleAITurn_MonteCarloRandom(simulationsPerMove, diceValue); // IA joga de novo (recursivo)
+            handleAITurn_MonteCarloRandom(simulationsPerMove); // IA joga de novo (recursivo)
+            return;
         }
-        // passa a vez
-
     }
 
     // action: {row, col, targetRow, targetCol}
@@ -387,8 +391,24 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
         return;
     }
 
+    // Atualiza o dataset da peça antes de mover (importante para o move() funcionar corretamente)
+    if (action.setTopColumn) {
+        pieceEl.dataset.top_column = 'true';
+    }
+    
     // chama a tua função move() para executar com animação/dom updates
+    console.log("Tentando mover peça:", {
+        de: { row: action.row, col: action.col },
+        para: { row: action.targetRow, col: action.targetCol },
+        diceValue,
+        top_column: pieceEl.dataset.top_column,
+        first_move: pieceEl.dataset.first_move,
+        pieceEl,
+        square: sq
+    });
+    
     const result = await move(action.row, action.col, diceValue, true, pieceEl, sq);
+    console.log("Resultado do movimento:", result);
 
     // após mover, atualiza turno e UI conforme as regras
     if (result === 'success') {
@@ -400,6 +420,7 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
             updateTurnIndicator();
         } else {
             // IA joga de novo -> definir comportamento: para simplificar, IA lança de novo automaticamente
+            showMessage("Computador joga de novo por ter rolado " + diceValue, 'info');
             diceValue = 0;
             resetDiceUI();
             updateTurnIndicator();
