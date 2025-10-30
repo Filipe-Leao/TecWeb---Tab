@@ -331,13 +331,12 @@ async function handleDiceRoll() {
 
     if (!red_can_move  && diceValue !== 1 && playerTurn === 'red') {
         showMessage("A peça vermelha não pode se mover neste turno.", 'error');
-        if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
+        if (diceValue !== 4 && diceValue !== 6) {
             showMessage("A passar a vez ao computador...", 'error');
             await new Promise(resolve => setTimeout(resolve, 1500));
             handleAITurn();
         } else {
             showMessage("Rode novamente o dado! Clique no dado.");
-            showMessage("A passar a vez ao computador...", 'error');
             await new Promise(resolve => setTimeout(resolve, 1500));
             resetDiceUI();
         }
@@ -372,11 +371,15 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
     console.log("Initial position:", targetRow, targetCol, pieceElement);
     let direction = 0;
 
+    let first_move_used = false;
+
     if (pieceElement.dataset.first_move === 'true' && diceValue === 1) {
         pieceElement.dataset.first_move = 'false';
+        first_move_used = true;
     }
     else if (pieceElement.dataset.first_move === 'true') {
         showMessage("No primeiro movimento, só se pode mover 1 casa.", 'error');
+        first_move_used = true;
         if (diceValue === 4 || diceValue === 6){
             return 'reroll_only';
         }
@@ -387,6 +390,7 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
     for (let k = 0; k < diceValue; k++) {
         if (pieceElement.dataset.first_move === 'true') {
             pieceElement.dataset.first_move = 'false';
+            first_move_used = true;
             if (targetRow === 0 && targetCol === BOARD_SIZE - 1) { // MUDADO
                 targetCol -= 1;
             }
@@ -440,12 +444,18 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
     const pieceValue = matrix[row][col];
     if (matrix[targetRow][targetCol] === pieceValue) {
         showMessage("Não pode mover, existe uma peça sua na casa de destino.", 'error');
+        if (first_move_used === 'true' && diceValue === 1) {
+            pieceElement.dataset.first_move = 'true';
+        }
         return 'fail';
     }
 
     const targetSquare = document.querySelector(`.square[data-row='${targetRow}'][data-col='${targetCol}']`);
     if (!targetSquare) {
         showMessage("Erro: Casa de destino não encontrada no DOM.", 'error');
+        if (first_move_used === 'true' && diceValue === 1) {
+            pieceElement.dataset.first_move = 'true';
+        }
         return 'fail';
     }
 
@@ -497,7 +507,7 @@ async function highlightMove(row, col, diceValue, can_go_up, pieceElement, origi
 
     if (pieceElement.dataset.first_move === 'true' && diceValue !== 1) {
         showMessage("No primeiro movimento, só se pode mover 1 casa.", 'error');
-        if (diceValue === 4 || diceValue === 6){
+        if (!red_can_move && (diceValue === 4 || diceValue === 6)){
             return 'reroll_only';
         }
         return 'fail';
