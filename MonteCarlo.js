@@ -350,14 +350,6 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
     if (diceValue !== 0) {
         console.log("Usando diceValue existente:", diceValue);
     } else {
-        // Rola o dado para a IA (simula o roll visual)
-        const val = rollDiceForAI(); // Valor lógico
-        console.log(`Computador rolou o dado: ${val}`);
-
-        // Simula a atualização da UI do dado (do teu script.js)
-        diceValue = val;
-        diceValueDisplay.textContent = diceValue;
-        // Atualiza os paus visuais
         let tab = 0;
         for (let i = 0; i < 4; i++) {
             let prob = Math.random();
@@ -369,7 +361,19 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
             }
         }
 
+        if (tab === 0){
+            diceValue = 6;
+        } else {
+            diceValue = tab;
+        }
+
+        console.log(`Computador rolou o dado: ${diceValue}`);
+
+        // Atualiza a UI
+        diceValueDisplay.textContent = diceValue;
         diceMessage.textContent = `Computador lançou o dado: ${diceValue}`;
+        addLog('blue', diceValue);
+        // --- FIM DA CORREÇÃO ---
     }
 
     // avalia jogadas
@@ -476,6 +480,8 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
     }
 }
 
+window.legalMovesForDice = legalMovesForDice;
+window.buildStateFromDOM = buildStateFromDOM;
 
 // Export (se estiveres a usar módulos)
 // export { handleAITurn, monteCarloEvaluateMoves };

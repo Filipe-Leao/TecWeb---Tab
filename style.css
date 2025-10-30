@@ -121,6 +121,66 @@ body {
     background: #f5e8e0; /* bege rosado claro */
 }
 
+#dice-log-container {
+    width: 90%;
+    margin: 20px auto 15px auto;
+    text-align: left;
+}
+
+#dice-log-container h4 {
+    font-size: 1em;
+    color: #5a3a3a;
+    margin: 0 0 8px 0;
+    border-bottom: 1px solid #8b5a5a;
+    padding-bottom: 5px;
+}
+
+/* A lista que vai conter os logs */
+#dice-log-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    height: 100px; /* Altura fixa para o log */
+    overflow-y: auto; /* Adiciona scroll se passar da altura */
+    border: 1px solid #8b5a5a;
+    border-radius: 5px;
+    background: #f5e8e0;
+}
+
+/* Cada linha do log */
+#dice-log-list li {
+    display: flex;
+    align-items: center;
+    padding: 5px 8px;
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #3d2020;
+    border-top: 1px dashed #d4b5a8;
+}
+
+#dice-log-list li:first-child {
+    border-top: none;
+}
+
+/* A "bola" colorida */
+.log-ball {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    margin-right: 8px;
+    border: 1px solid rgba(0,0,0,0.5);
+    flex-shrink: 0; /* Impede que a bola encolha */
+}
+
+/* Cores das bolas */
+.log-ball.red {
+    background-color: #c62828; /* Vermelho forte */
+}
+
+.log-ball.blue {
+    background-color: #1565c0; /* Azul forte */
+}
+
 .btn-enviar {
     width: 100%;
     background: #8b5a5a; /* bordô suave */

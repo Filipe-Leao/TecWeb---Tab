@@ -196,6 +196,7 @@ const diceMessage = document.getElementById('dice-message');
 const messageBar = document.getElementById('message-bar');
 const turnIndicator = document.getElementById('turn-indicator');
 const turnPlayerDisplay = document.getElementById('turn-player-display');
+const diceLogList = document.getElementById('dice-log-list');
 
 const maxPieces = 12;
 let selectedPiece = null;
@@ -203,8 +204,6 @@ let diceValue = 0;
 let playerTurn = 'red';
 let matrix = null;
 let pieces = []; // Esta linha já estava aqui, a de cima era duplicada
-let red_can_move = false;
-let blue_can_move = false;
 
 // Variável de controlo para a Promise do askDirection
 let resolveAskDirection = null;
@@ -327,44 +326,42 @@ async function handleDiceRoll() {
         showMessage("É a vez do computador!", 'error');
         return;
     }
-    rollDice();
 
-    if (!red_can_move  && diceValue !== 1 && playerTurn === 'red') {
-        showMessage("A peça vermelha não pode se mover neste turno.", 'error');
-        if (diceValue !== 4 && diceValue !== 6) {
-            showMessage("A passar a vez ao computador...", 'error');
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            handleAITurn();
-        } else {
-            showMessage("Rode novamente o dado! Clique no dado.");
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            resetDiceUI();
+    rollDice(); // Isto define o 'diceValue' global
+    addLog('red', diceValue);
+
+    // --- NOVO BLOCO DE VALIDAÇÃO (Corrige o Jogo "Preso") ---
+    if (typeof window.legalMovesForDice === 'function') {
+        // Usa as funções do MonteCarlo.js para verificar o estado
+        const currentState = window.buildStateFromDOM();
+        const validMoves = window.legalMovesForDice(currentState, 1, diceValue); // 1 = jogador vermelho
+
+        if (validMoves.length === 0) {
+            // NÃO HÁ JOGADAS VÁLIDAS! Este é o bug que reportou.
+            showMessage(`Não há jogadas válidas com o dado ${diceValue}.`, 'error');
+
+            if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
+                // Dado 2 ou 3: Passa a vez
+                showMessage("A passar a vez ao computador...", 'error');
+                // Espera 2 segundos para a mensagem ser lida
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                handleAITurn();
+            } else {
+                // Dado 1, 4, ou 6: Reroll
+                showMessage("Rode novamente o dado! Clique no dado.");
+                // Espera 2 segundos
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                resetDiceUI();
+            }
+            return; // Impede o resto da função de correr
         }
-
-        return;
-    }
-    else {
-        red_can_move = true;
-    }
-
-    if (!blue_can_move  && diceValue !== 1 && playerTurn === 'blue') {
-        showMessage("A peça azul não pode se mover neste turno.", 'error');
-        if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
-            showMessage("A passar a vez ao jogador...", 'error');
-        } else {
-            showMessage("Rode novamente o dado! Clique no dado.");
-            handleAITurn();
-        }
-
-        return;
-    }
-    else {
-        blue_can_move = true;
+    } else {
+        console.warn("legalMovesForDice não foi encontrada. A saltar a validação de jogada.");
     }
 }
 
 // Função 'move' retorna 3 estados: 'success', 'reroll_only', 'fail'
-async function move(row, col, diceValue, can_go_up, pieceElement, originalSquareElement, aiMoveChoice = null) { // Adicionado aiMoveChoice
+async function move(row, col, diceValue, can_go_up, pieceElement, originalSquareElement, aiMoveChoice = null) {
     let targetRow = parseInt(row);
     let targetCol = parseInt(col);
 
@@ -373,53 +370,63 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
 
     let first_move_used = false;
 
-    if (pieceElement.dataset.first_move === 'true' && diceValue === 1) {
-        pieceElement.dataset.first_move = 'false';
-        first_move_used = true;
-    }
-    else if (pieceElement.dataset.first_move === 'true') {
-        showMessage("No primeiro movimento, só se pode mover 1 casa.", 'error');
-        first_move_used = true;
-        if (diceValue === 4 || diceValue === 6){
-            return 'reroll_only';
+    // --- LÓGICA DE FIRST_MOVE (Verificação inicial) ---
+    if (pieceElement.dataset.first_move === 'true') {
+        if (diceValue === 1) {
+            first_move_used = true;
+            pieceElement.dataset.first_move = 'false'; //
+        } else {
+            showMessage("No primeiro movimento, só se pode mover 1 casa.", 'error');
+            if (diceValue === 4 || diceValue === 6){
+                return 'reroll_only';
+            }
+            return 'fail';
         }
-        return 'fail';
     }
+    // --- FIM DA VERIFICAÇÃO ---
 
     // Loop de movimento
     for (let k = 0; k < diceValue; k++) {
-        if (pieceElement.dataset.first_move === 'true') {
-            pieceElement.dataset.first_move = 'false';
-            first_move_used = true;
-            if (targetRow === 0 && targetCol === BOARD_SIZE - 1) { // MUDADO
-                targetCol -= 1;
-            }
-        }
+
+        // --- LÓGICA DE MOVIMENTO (CORRIGIDA) ---
+
+        // 1. Define sempre a direção
         if (targetRow === 1 || targetRow === 3) {
             direction = 1;
         } else if (targetRow === 0 || targetRow === 2) {
             direction = -1;
         }
-        targetCol += direction;
 
-        // --- CORREÇÃO DE SINTAXE AQUI ---
-        if (targetCol < 0 || targetCol >= BOARD_SIZE) { // MUDADO
+        // 2. Verifica se é o caso especial (1º passo de 1º mov)
+        if (first_move_used && k === 0) {
+            if (targetRow === 0 && targetCol === BOARD_SIZE - 1) {
+                targetCol -= 1; // Caso especial do canto
+            } else {
+                // É um 1º mov, mas não no canto, move-se normalmente
+                targetCol += direction;
+            }
+        } else {
+            // É um passo normal (k > 0)
+            targetCol += direction;
+        }
+        // --- FIM DA CORREÇÃO ---
+
+
+        // --- Lógica de transição de linha (sem alteração) ---
+        if (targetCol < 0 || targetCol >= BOARD_SIZE) {
             if (targetRow === 0) {
                 targetRow = 1;
                 targetCol = 0;
-            } // <-- ESTA CHAVETA '}' ESTAVA EM FALTA
+            }
             else if (targetRow === 1) {
-                let moveChoice = 'down'; // Padrão
-                // Só pergunta se: for 'red' E não tiver subido E estiver no fim
+                let moveChoice = 'down';
                 if (playerTurn === 'red' && pieceElement.dataset.top_column === 'false' && targetCol >= BOARD_SIZE) {
                     moveChoice = await askDirection();
                 }
-                // Se for 'blue', usa a escolha da IA
                 else if (playerTurn === 'blue') {
-                    moveChoice = aiMoveChoice; // Será 'up' ou 'down'
+                    moveChoice = aiMoveChoice;
                 }
 
-                // Aplica a escolha
                 if (moveChoice === 'up' && pieceElement.dataset.top_column === 'false') {
                     pieceElement.dataset.top_column = 'true';
                     targetRow = 0;
@@ -429,7 +436,6 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
                     targetCol = BOARD_SIZE - 1;
                 }
             }
-            // --- Fim da Adaptação ---
             else if (targetRow === 2) {
                 targetRow = 1;
                 targetCol = 0;
@@ -438,13 +444,13 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
                 targetCol = BOARD_SIZE - 1;
             }
         }
-        // --- FIM DA CORREÇÃO DE SINTAXE ---
     }
 
     const pieceValue = matrix[row][col];
     if (matrix[targetRow][targetCol] === pieceValue) {
         showMessage("Não pode mover, existe uma peça sua na casa de destino.", 'error');
-        if (first_move_used === 'true' && diceValue === 1) {
+        // Rollback
+        if (first_move_used) {
             pieceElement.dataset.first_move = 'true';
         }
         return 'fail';
@@ -453,23 +459,21 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
     const targetSquare = document.querySelector(`.square[data-row='${targetRow}'][data-col='${targetCol}']`);
     if (!targetSquare) {
         showMessage("Erro: Casa de destino não encontrada no DOM.", 'error');
-        if (first_move_used === 'true' && diceValue === 1) {
+        if (first_move_used) { // Rollback
             pieceElement.dataset.first_move = 'true';
         }
         return 'fail';
     }
 
-    // --- ADAPTADO: Lógica de Captura e Fim de Jogo ---
+    // --- Lógica de Captura (sem alteração) ---
     if (matrix[targetRow][targetCol] !== 0) {
         showMessage("Capturou uma peça do seu adversário!", 'info');
         targetSquare.innerHTML = '';
 
-        // Verifica se o jogo acabou
         if (checkWinCondition()) {
-            return 'success_win'; // Retorna estado de vitória
+            return 'success_win';
         }
     }
-    // --- Fim da Adaptação ---
 
     targetSquare.appendChild(pieceElement);
     matrix[targetRow][targetCol] = pieceValue;
@@ -502,52 +506,80 @@ async function highlightMove(row, col, diceValue, can_go_up, pieceElement, origi
     let targetRow = parseInt(row);
     let targetCol = parseInt(col);
 
-    console.log("Initial position:", targetRow, targetCol, pieceElement);
+    console.log("Highlight Initial:", targetRow, targetCol, pieceElement);
     let direction = 0;
 
-    if (pieceElement.dataset.first_move === 'true' && diceValue !== 1) {
-        showMessage("No primeiro movimento, só se pode mover 1 casa.", 'error');
-        if (!red_can_move && (diceValue === 4 || diceValue === 6)){
-            return 'reroll_only';
+    let first_move_used = false;
+
+    // --- LÓGICA DE FIRST_MOVE (Verificação inicial) ---
+    if (pieceElement.dataset.first_move === 'true') {
+        if (diceValue === 1) {
+            first_move_used = true;
+        } else {
+            showMessage("No primeiro movimento, só se pode mover 1 casa.", 'error');
+            if (diceValue === 4 || diceValue === 6){
+                return 'reroll_only';
+            }
+            return 'fail';
         }
-        return 'fail';
     }
+    // --- FIM DA VERIFICAÇÃO ---
 
     // Loop de movimento
     for (let k = 0; k < diceValue; k++) {
-        if (pieceElement.dataset.first_move === 'true') {
-            if (targetRow === 0 && targetCol === BOARD_SIZE - 1) { // MUDADO
-                targetCol -= 1;
-            }
-        }
+
+        // --- LÓGICA DE MOVIMENTO (CORRIGIDA) ---
+
+        // 1. Define sempre a direção
         if (targetRow === 1 || targetRow === 3) {
             direction = 1;
         } else if (targetRow === 0 || targetRow === 2) {
             direction = -1;
         }
-        targetCol += direction;
-        if (targetCol < 0 || targetCol >= BOARD_SIZE) { // MUDADO
+
+        // 2. Verifica se é o caso especial (1º passo de 1º mov)
+        if (first_move_used && k === 0) {
+            if (targetRow === 0 && targetCol === BOARD_SIZE - 1) {
+                targetCol -= 1; // Caso especial do canto
+            } else {
+                // É um 1º mov, mas não no canto, move-se normalmente
+                targetCol += direction;
+            }
+        } else {
+            // É um passo normal (k > 0)
+            targetCol += direction;
+        }
+        // --- FIM DA CORREÇÃO ---
+
+
+        // --- Lógica de transição de linha (sem alteração) ---
+        if (targetCol < 0 || targetCol >= BOARD_SIZE) {
             if (targetRow === 0) {
                 targetRow = 1;
                 targetCol = 0;
             } else if (targetRow === 1) {
                 let moveChoice = 'down';
-                if (pieceElement.dataset.top_column === 'false' && targetCol >= BOARD_SIZE) { // MUDADO
-                    moveChoice = await askDirection();
+
+                 if (playerTurn === 'red' && pieceElement.dataset.top_column === 'false' && targetCol >= BOARD_SIZE) {
+                    showMessage("Esta jogada leva a uma bifurcação. A escolha aparecerá se confirmar.", "info");
+                    targetRow = 1;
+                    targetCol = BOARD_SIZE -1;
+                    break;
                 }
+
                 if (moveChoice === 'up' && pieceElement.dataset.top_column === 'false') {
                     targetRow = 0;
-                    targetCol = BOARD_SIZE - 1; // MUDADO
+                    targetCol = BOARD_SIZE - 1;
                 } else {
                     targetRow = 2;
-                    targetCol = BOARD_SIZE - 1; // MUDADO
+                    targetCol = BOARD_SIZE - 1;
                 }
             } else if (targetRow === 2) {
                 targetRow = 1;
                 targetCol = 0;
             } else if (targetRow === 3) {
                 targetRow = 2;
-                targetCol = BOARD_SIZE - 1; // MUDADO
+                targetCol = BOARD_SIZE - 1;
             }
         }
     }
@@ -558,6 +590,13 @@ async function highlightMove(row, col, diceValue, can_go_up, pieceElement, origi
 
     if (!targetSquare) {
         showMessage("Casa de destino inválida.", "error");
+        return 'fail';
+    }
+
+    // VERIFICAÇÃO FINAL: Não pode aterrar na própria peça
+    const pieceValue = matrix[row][col];
+    if (matrix[targetRow][targetCol] === pieceValue) {
+        showMessage("Não pode mover, existe uma peça sua na casa de destino.", 'error');
         return 'fail';
     }
 
@@ -688,14 +727,8 @@ async function handleClick(e) {
                 resetDiceUI();
                 break;
             case 'fail':
-                const movedPieces = document.querySelectorAll('.piece_red[data-first_move="false"]');
-                if (movedPieces.length === 0) {
-                    showMessage("Não tem jogadas válidas. A passar a vez ao computador...", 'error');
-                    // ADAPTADO: Chama o handleAITurn correto
-                    handleAITurn();
-                } else {
-                    showMessage("Tente mover outra peça (uma que já não esteja na base).", 'error');
-                }
+                showMessage("Jogada inválida. Tente mover outra peça.", 'error');
+                // O 'diceValue' não é resetado, permitindo ao jogador tentar outra peça.
                 break;
             case 'move_not_confirmed':
                 showMessage("Movimento não confirmado. Selecione outra peça para mover.", 'error');
@@ -788,6 +821,30 @@ function checkWinCondition() {
         return true;
     }
     return false;
+}
+
+const MAX_LOG_ENTRIES = 20; // Limite de entradas no log
+
+function addLog(playerColor, diceValue) {
+    if (!diceLogList) return; // Segurança
+
+    const li = document.createElement('li');
+    const ball = document.createElement('span');
+    ball.className = `log-ball ${playerColor}`;
+
+    const text = document.createTextNode(diceValue);
+
+    li.appendChild(ball);
+    li.appendChild(text);
+
+    // Adiciona o novo item
+    diceLogList.prepend(li); // Adiciona no topo
+
+    // Limita o número de logs
+    if (diceLogList.children.length > MAX_LOG_ENTRIES) {
+        // Remove o item mais antigo (o último da lista)
+        diceLogList.removeChild(diceLogList.lastChild);
+    }
 }
 
 // --- Listener final ---
