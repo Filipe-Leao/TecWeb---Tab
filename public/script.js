@@ -5,13 +5,30 @@ const NUM_ROWS = 4; // Número fixo de linhas
 // Login
 const loginForm = document.getElementById('loginForm');
 const loginPage = document.getElementById('loginPage');
+const registerForm = document.getElementById("registerForm");
+const showRegisterLink = document.getElementById("showRegister");
+const showLoginLink = document.getElementById("showLogin");
 const gamePage = document.getElementById('gamePage');
 const configPanel = document.getElementById('configPanel');
 
-const API_BASE = "https://ee16218be8af.ngrok-free.app";
+// Alternar para registro
+showRegisterLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    loginForm.classList.add("oculto");
+    registerForm.classList.remove("oculto");
+});
 
-document.addEventListener("DOMContentLoaded", () => {
-  loginForm.addEventListener("submit", async (e) => {
+// Alternar para login
+showLoginLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    registerForm.classList.add("oculto");
+    loginForm.classList.remove("oculto");
+});
+
+
+const API_BASE = "https://ee16218be8af.ngrok-free.app";
+// Login form submission
+loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const username = document.getElementById("username").value.trim();
@@ -58,7 +75,41 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Erro no fetch:", err);
       alert("Erro ao conectar com o servidor.");
     }
-  });
+});
+
+
+// register form submission
+registerForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const username = document.getElementById("regUsername").value.trim();
+    const password = document.getElementById("regPassword").value.trim();
+
+    try {
+        const res = await fetch(`${API_BASE}/api/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            alert(data.error || "Erro ao registrar usuário.");
+            return;
+        }
+
+        alert("Cadastro realizado com sucesso! Faça login para continuar.");
+
+        // Limpar registro e voltar ao login
+        registerForm.reset();
+        registerForm.classList.add("oculto");
+        loginForm.classList.remove("oculto");
+
+    } catch (err) {
+        console.error("Erro no registro:", err);
+        alert("Erro ao conectar com o servidor.");
+    }
 });
 
 // Configurações do Jogo

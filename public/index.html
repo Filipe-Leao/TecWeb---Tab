@@ -67,8 +67,8 @@
     </div>
 
     <div class="login-container">
-        <h2>LOG-IN</h2>
         <form id="loginForm">
+            <h2>LOGIN</h2>
             <label for="username">USER</label>
             <input type="text" id="username" placeholder="Insert your username" required>
 
@@ -76,7 +76,20 @@
             <input type="password" id="password" placeholder="Insert your password" required>
 
             <button type="submit" class="btn-enviar">ENVIAR</button>
+            <p>Não tem conta? <a href="#" id="showRegister">Registre-se aqui</a></p>
         </form>
+
+    <form id="registerForm" class="oculto">
+        <h2>REGISTRAR</h2>
+        <label for="regUsername">USER</label>
+        <input type="text" id="regUsername" placeholder="Escolha um nome de usuário" required>
+
+        <label for="regPassword">SENHA</label>
+        <input type="password" id="regPassword" placeholder="Escolha uma senha" required>
+
+        <button type="submit" class="btn-enviar">REGISTRAR</button>
+        <p>Já tem conta? <a href="#" id="showLogin">Voltar ao login</a></p>
+    </form>
     </div>
 </div>
 
