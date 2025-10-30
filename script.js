@@ -1,7 +1,12 @@
+// Variável global para o tamanho do tabuleiro
+let BOARD_SIZE = 9; // Padrão (número de colunas)
+const NUM_ROWS = 4; // Número fixo de linhas
+
 // Login
 const loginForm = document.getElementById('loginForm');
 const loginPage = document.getElementById('loginPage');
 const gamePage = document.getElementById('gamePage');
+const configPanel = document.getElementById('configPanel');
 
 loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -12,28 +17,80 @@ loginForm.addEventListener('submit', (e) => {
     if (username && password) {
         sessionStorage.setItem('username', username);
         loginPage.classList.add('oculto');
-        gamePage.classList.remove('oculto');
-        createBoard(); // Cria o tabuleiro após login
+        configPanel.classList.remove('oculto'); // Mostra painel de configurações
     } else {
         alert('Por favor, preencha todos os campos.');
+    }
+});
+
+// Configurações do Jogo
+const btnStartGame = document.getElementById('btnStartGame');
+const gameModeSelect = document.getElementById('gameMode');
+const aiLevelOption = document.getElementById('aiLevelOption');
+
+// Mostrar/ocultar opção de nível da IA conforme o modo de jogo
+gameModeSelect.addEventListener('change', () => {
+    if (gameModeSelect.value === 'player') {
+        aiLevelOption.style.display = 'none';
+    } else {
+        aiLevelOption.style.display = 'block';
+    }
+});
+
+btnStartGame.addEventListener('click', () => {
+    // Obter configurações escolhidas
+    const boardSize = parseInt(document.getElementById('boardSize').value);
+    const gameMode = document.getElementById('gameMode').value;
+    const firstPlayer = document.getElementById('firstPlayer').value;
+    const aiLevel = document.getElementById('aiLevel').value;
+
+    // Atualizar tamanho do tabuleiro (número de colunas)
+    BOARD_SIZE = boardSize;
+
+    // Guardar configurações
+    sessionStorage.setItem('boardSize', boardSize);
+    sessionStorage.setItem('gameMode', gameMode);
+    sessionStorage.setItem('firstPlayer', firstPlayer);
+    sessionStorage.setItem('aiLevel', aiLevel);
+
+    // Definir o jogador inicial
+    playerTurn = firstPlayer;
+
+    // Ocultar painel de configurações e mostrar página do jogo
+    configPanel.classList.add('oculto');
+    gamePage.classList.remove('oculto');
+    
+    // Criar o tabuleiro com as configurações
+    createBoard();
+    
+    // Se o computador começa, iniciar o turno dele
+    if (firstPlayer === 'blue') {
+        updateTurnIndicator();
+        showMessage("O computador (Azul) começa o jogo...");
+        setTimeout(() => {
+            handleAITurn();
+        }, 1000);
+    } else {
+        updateTurnIndicator();
+        showMessage("Você (Vermelho) começa! Clique no dado para lançar.");
     }
 });
 
 // Overlay
 const overlay = document.getElementById('overlay');
 
-// Regras
-const btnRegras = document.getElementById('btnRegras');
-const regras = document.getElementById('regras');
-const btnFecharRegras = document.getElementById('btnFecharRegras');
+// Instruções
+const btnInstrucoes = document.getElementById('btnInstrucoes');
+const instrucoes = document.getElementById('instrucoes');
+const btnFecharInstrucoes = document.getElementById('btnFecharInstrucoes');
 
-btnRegras.addEventListener('click', () => {
-    regras.classList.add('regras-visiveis');
+btnInstrucoes.addEventListener('click', () => {
+    instrucoes.classList.add('instrucoes-visiveis');
     overlay.classList.add('ativo');
 });
 
-btnFecharRegras.addEventListener('click', () => {
-    regras.classList.remove('regras-visiveis');
+btnFecharInstrucoes.addEventListener('click', () => {
+    instrucoes.classList.remove('instrucoes-visiveis');
     overlay.classList.remove('ativo');
 });
 
@@ -52,6 +109,79 @@ btnFecharClassificacoes.addEventListener('click', () => {
     overlay.classList.remove('ativo');
 });
 
+// Instruções na página do jogo
+const btnInstrucoesJogo = document.getElementById('btnInstrucoesJogo');
+const instrucoesJogo = document.getElementById('instrucoesJogo');
+const btnFecharInstrucoesJogo = document.getElementById('btnFecharInstrucoesJogo');
+
+btnInstrucoesJogo.addEventListener('click', () => {
+    instrucoesJogo.classList.add('instrucoes-visiveis');
+    overlay.classList.add('ativo');
+});
+
+btnFecharInstrucoesJogo.addEventListener('click', () => {
+    instrucoesJogo.classList.remove('instrucoes-visiveis');
+    overlay.classList.remove('ativo');
+});
+
+// Classificações na página do jogo
+const btnClassificacoesJogo = document.getElementById('btnClassificacoesJogo');
+const classificacoesJogo = document.getElementById('classificacoesJogo');
+const btnFecharClassificacoesJogo = document.getElementById('btnFecharClassificacoesJogo');
+
+btnClassificacoesJogo.addEventListener('click', () => {
+    classificacoesJogo.classList.add('classificacoes-visiveis');
+    overlay.classList.add('ativo');
+});
+
+btnFecharClassificacoesJogo.addEventListener('click', () => {
+    classificacoesJogo.classList.remove('classificacoes-visiveis');
+    overlay.classList.remove('ativo');
+});
+
+// Botão de Desistir
+const btnDesistir = document.getElementById('btnDesistir');
+const endGameMenu = document.getElementById('endGameMenu');
+const endGameMessage = document.getElementById('endGameMessage');
+const btnVoltarInicio = document.getElementById('btnVoltarInicio');
+const btnJogarNovamente = document.getElementById('btnJogarNovamente');
+
+btnDesistir.addEventListener('click', () => {
+    // Mostrar mensagem de que os Azuis venceram
+    endGameMessage.textContent = 'Os Azuis Venceram!';
+    endGameMenu.classList.remove('oculto');
+});
+
+// Voltar à página inicial
+btnVoltarInicio.addEventListener('click', () => {
+    endGameMenu.classList.add('oculto');
+    gamePage.classList.add('oculto');
+    loginPage.classList.remove('oculto');
+    
+    // Limpar sessionStorage
+    sessionStorage.clear();
+    
+    // Resetar formulário de login
+    loginForm.reset();
+});
+
+// Jogar novamente
+btnJogarNovamente.addEventListener('click', () => {
+    endGameMenu.classList.add('oculto');
+    gamePage.classList.add('oculto');
+    configPanel.classList.remove('oculto');
+    
+    // Resetar variáveis do jogo
+    selectedPiece = null;
+    diceValue = 0;
+    playerTurn = 'red';
+    matrix = null;
+    pieces = [];
+    
+    // Resetar o dado
+    resetDiceUI();
+});
+
 
 // Criar tabuleiro
 const board = document.getElementById('board');
@@ -68,13 +198,12 @@ const messageBar = document.getElementById('message-bar');
 const turnIndicator = document.getElementById('turn-indicator');
 const turnPlayerDisplay = document.getElementById('turn-player-display');
 
-const numSquares = 12;
 const maxPieces = 12;
-const numLines = 4;
 let selectedPiece = null;
 let diceValue = 0;
 let playerTurn = 'red';
 let matrix = null;
+let pieces = []; // ADICIONE ESTA LINHA
 
 // Variável de controlo para a Promise do askDirection
 let resolveAskDirection = null;
@@ -99,37 +228,69 @@ function updateTurnIndicator() {
 
 // Função de criar o tabuleiro
 function createBoard() {
-    matrix = new Array(numLines);
-    for (let i = 0; i < numLines; i++) {
-        matrix[i] = new Array(numSquares)
-        for (let j = 0; j < numSquares; j++) {
-            matrix[i][j] = 0;
-            const square = document.createElement('div');
-            square.classList.add('square');
-            square.dataset.index = j;
-            square.dataset.row = i;
-            square.dataset.col = j;
-            if (j < maxPieces && i == numLines - 1) {
-                const piece = document.createElement('div');
-                piece.dataset.top_column = false;
-                piece.dataset.first_move = true;
-                piece.classList.add('piece_blue');
-                matrix[i][j] = 2;
-                square.appendChild(piece);
-            }
-            else if ((j > numSquares - 1 - maxPieces) && (i == 0)) {
-                const piece = document.createElement('div');
-                piece.dataset.top_column = false;
-                piece.dataset.first_move = true;
-                piece.classList.add('piece_red');
-                matrix[i][j] = 1;
-                square.appendChild(piece);
-            }
-            square.addEventListener('click', handleClick);
-            board.appendChild(square);
+    const board = document.getElementById('board');
+    board.innerHTML = ''; // Limpa o tabuleiro
+    
+    // Atualiza o CSS grid com o novo tamanho (BOARD_SIZE colunas)
+    board.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 50px)`;
+    
+    // Total de casas = BOARD_SIZE colunas * 4 linhas
+    const totalSquares = BOARD_SIZE * NUM_ROWS;
+    
+    // Inicializa a matriz
+    matrix = [];
+    for (let row = 0; row < NUM_ROWS; row++) {
+        matrix[row] = [];
+        for (let col = 0; col < BOARD_SIZE; col++) {
+            matrix[row][col] = 0;
         }
     }
-    // Atualiza o indicador de turno no início
+    
+    // Inicializa o array de peças
+    pieces = [];
+    
+    let squareIndex = 0;
+    for (let row = 0; row < NUM_ROWS; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
+            const square = document.createElement('div');
+            square.className = 'square';
+            square.dataset.row = row;
+            square.dataset.col = col;
+            
+            // Posicionar peças vermelhas na primeira linha (linha 0)
+            if (row === 0) {
+                const piece = document.createElement('div');
+                piece.className = 'piece_red';
+                piece.dataset.first_move = 'true';
+                piece.dataset.top_column = 'false';
+                square.appendChild(piece);
+                matrix[row][col] = 1; // 1 representa peça vermelha
+                
+                // Adicionar evento de clique no square
+                square.addEventListener('click', handleClick);
+            }
+            // Posicionar peças azuis na última linha (linha 3)
+            else if (row === NUM_ROWS - 1) {
+                const piece = document.createElement('div');
+                piece.className = 'piece_blue';
+                piece.dataset.first_move = 'true';
+                piece.dataset.top_column = 'false';
+                square.appendChild(piece);
+                matrix[row][col] = 2; // 2 representa peça azul
+                
+                // Adicionar evento de clique no square
+                square.addEventListener('click', handleClick);
+            }
+            else {
+                // Casas vazias também precisam de evento de clique
+                square.addEventListener('click', handleClick);
+            }
+            
+            board.appendChild(square);
+            squareIndex++;
+        }
+    }
+    
     updateTurnIndicator();
 }
 
@@ -192,11 +353,11 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
         return 'fail';
     }
 
-    //
+    // Loop de movimento
     for (let k = 0; k < diceValue; k++) {
         if (pieceElement.dataset.first_move === 'true') {
             pieceElement.dataset.first_move = 'false';
-            if (targetRow === 0 && targetCol === numSquares - 1) {
+            if (targetRow === 0 && targetCol === BOARD_SIZE - 1) { // MUDADO
                 targetCol -= 1;
             }
         }
@@ -206,29 +367,29 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
             direction = -1;
         }
         targetCol += direction;
-        if (targetCol < 0 || targetCol >= numSquares) {
+        if (targetCol < 0 || targetCol >= BOARD_SIZE) { // MUDADO
             if (targetRow === 0) {
                 targetRow = 1;
                 targetCol = 0;
             } else if (targetRow === 1) {
                 let moveChoice = 'down';
-                if (pieceElement.dataset.top_column === 'false' && targetCol >= numSquares) {
+                if (pieceElement.dataset.top_column === 'false' && targetCol >= BOARD_SIZE) { // MUDADO
                     moveChoice = await askDirection();
                 }
                 if (moveChoice === 'up' && pieceElement.dataset.top_column === 'false') {
                     pieceElement.dataset.top_column = 'true';
                     targetRow = 0;
-                    targetCol = numSquares - 1;
+                    targetCol = BOARD_SIZE - 1; // MUDADO
                 } else {
                     targetRow = 2;
-                    targetCol = numSquares - 1;
+                    targetCol = BOARD_SIZE - 1; // MUDADO
                 }
             } else if (targetRow === 2) {
                 targetRow = 1;
                 targetCol = 0;
             } else if (targetRow === 3) {
                 targetRow = 2;
-                targetCol = numSquares - 1;
+                targetCol = BOARD_SIZE - 1; // MUDADO
             }
         }
     }
@@ -250,7 +411,7 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
     matrix[targetRow][targetCol] = pieceValue;
     matrix[row][col] = 0;
     if (originalSquareElement) {
-        originalSquareElement.style.backgroundColor = '#eee';
+        originalSquareElement.style.backgroundColor = 'white'; // MUDADO para manter branco
     }
     return 'success';
 }
@@ -375,7 +536,7 @@ function highlight(square) {
 
 function clearHighlights() {
     document.querySelectorAll('.square').forEach(sq => {
-        sq.style.backgroundColor = '#eee';
+        sq.style.backgroundColor = 'white'; // MUDADO para manter branco
     });
 }
 
