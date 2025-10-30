@@ -84,7 +84,7 @@ function rollDiceForAI() {
 // Direção de avanço por linha segundo as tuas regras (lembrando a inversão de origem)
 function rowDirection(row) {
     // pelas tuas regras:
-    // - 1ª e 3ª linhas (índices 0 e 2 no teu sistema) avançam da direita para a esquerda? 
+    // - 1ª e 3ª linhas (índices 0 e 2 no teu sistema) avançam da direita para a esquerda?
     //   No teu código original definiste: "1ª e 3ª linhas: esquerda -> direita" mas com inversão.
     // O teu move() original usa:
     // if (targetRow === 1 || targetRow === 3) direction = 1;
@@ -332,33 +332,53 @@ async function monteCarloEvaluateMoves(simulationsPerMove = 50, diceValueForThis
     }
     const bestCandidates = results.filter(e => (e.sims > 0 ? (e.wins / e.sims) : 0) === bestRate);
     const chosen = bestCandidates[Math.floor(Math.random() * bestCandidates.length)];
-    return { action: chosen.move, diceValue, winrate: chosen.wins / chosen.sims };
+    return {
+            action: chosen.move,
+            diceValue,
+            winrate: chosen.wins / chosen.sims
+        };
 }
 
 // --------------------- integração com o teu handleAITurn (executa movimento no DOM) ---------------------
 
 // Esta função faz o turno do AI: rola o dado (visualmente), escolhe jogada (aleatória/MC) e chama move()
 async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue) {
+    // ADAPTADO: Limpa destaques da jogada anterior
+    clearHighlights();
+
     console.log("AI Turn começou com diceValue:", diceValue);
-    // bloqueia se já houver diceValue (evita sobrescrever se jogador ainda não jogou)
     if (diceValue !== 0) {
         console.log("Usando diceValue existente:", diceValue);
     } else {
-        // rola o dado para a IA e actualiza UI (mantendo a tua UI)
-        const val = rollDiceForAI(); // valor puramente lógico
+        // Rola o dado para a IA (simula o roll visual)
+        const val = rollDiceForAI(); // Valor lógico
         console.log(`Computador rolou o dado: ${val}`);
-        // actualiza UI de "dice sticks" e displays — podemos reutilizar a tua função rollDice()
-        // Contudo para manter UI sincronizada, chama a tua função rollDice() original se quiseres animação:
-        // -> mas rollDice() do teu código está ligada ao click do jogador. Podemos simular a actualização:
+
+        // Simula a atualização da UI do dado (do teu script.js)
         diceValue = val;
         diceValueDisplay.textContent = diceValue;
+        // Atualiza os paus visuais
+        let tab = 0;
+        for (let i = 0; i < 4; i++) {
+            let prob = Math.random();
+            if (prob >= 0.50){
+                tab++;
+                diceSticks[i].className = 'stick claro';
+            } else {
+                diceSticks[i].className = 'stick escuro';
+            }
+        }
+
         diceMessage.textContent = `Computador lançou o dado: ${diceValue}`;
     }
 
     // avalia jogadas
     const { action, diceValue: usedDice, winrate } = await monteCarloEvaluateMoves(simulationsPerMove, diceValue);
     diceValue = usedDice;
+
     if (!action) {
+        // ... (lógica de 'não há jogadas' sem alteração) ...
+        // ... (mas envolvemos a chamada recursiva num setTimeout) ...
         if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
             showMessage("Azuis não têm jogadas válidas. A passar a vez ao jogador.", 'info');
             playerTurn = 'red';
@@ -370,16 +390,17 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
             showMessage("Azuis não têm jogadas válidas mas podem rerolar.", 'info');
             console.log("AI rerolls since it has no valid moves but dice is 1/4/6");
             diceValue = 0;
-            setTimeout(3000); // pequena pausa para o jogador ver a mensagem
             resetDiceUI();
             updateTurnIndicator();
-            handleAITurn_MonteCarloRandom(simulationsPerMove); // IA joga de novo (recursivo)
+            // ADAPTADO: Delay de 2 segundos
+            setTimeout(() => {
+                handleAITurn_MonteCarloRandom(simulationsPerMove, 0); // IA joga de novo
+            }, 2000);
             return;
         }
     }
 
-    // action: {row, col, targetRow, targetCol}
-    // precisa do elemento DOM da peça e da square original
+    // action: {row, col, targetRow, targetCol, setTopColumn}
     const sq = document.querySelector(`.square[data-row='${action.row}'][data-col='${action.col}']`);
     if (!sq) {
         showMessage("Erro: casa da peça do computador não encontrada no DOM.", 'error');
@@ -391,49 +412,63 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
         return;
     }
 
-    // Atualiza o dataset da peça antes de mover (importante para o move() funcionar corretamente)
-    if (action.setTopColumn) {
-        pieceEl.dataset.top_column = 'true';
+    // ADAPTADO: Bug da escolha UP/DOWN
+    // Removemos esta linha. A escolha será passada para o move()
+    // if (action.setTopColumn) { pieceEl.dataset.top_column = 'true'; }
+
+    // ADAPTADO: Destaque visual
+    sq.classList.add('highlight-start');
+
+    // ADAPTADO: Passa a escolha da IA ('up' ou 'down') para a função move()
+    const aiChoice = action.setTopColumn ? 'up' : 'down';
+
+    // chama a tua função move()
+    const result = await move(action.row, action.col, diceValue, true, pieceEl, sq, aiChoice);
+
+    // ADAPTADO: Destaque visual da casa final
+    const sqEnd = document.querySelector(`.square[data-row='${action.targetRow}'][data-col='${action.targetCol}']`);
+    if (result === 'success' || result === 'success_win') {
+        if (sqEnd) sqEnd.classList.add('highlight-end');
     }
-    
-    // chama a tua função move() para executar com animação/dom updates
-    console.log("Tentando mover peça:", {
-        de: { row: action.row, col: action.col },
-        para: { row: action.targetRow, col: action.targetCol },
-        diceValue,
-        top_column: pieceEl.dataset.top_column,
-        first_move: pieceEl.dataset.first_move,
-        pieceEl,
-        square: sq
-    });
-    
-    const result = await move(action.row, action.col, diceValue, true, pieceEl, sq);
-    console.log("Resultado do movimento:", result);
+
+    // ADAPTADO: Pequena pausa para ver o destaque
+    await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5s pausa
+
+    // ADAPTADO: Lógica de Fim de Jogo
+    if (result === 'success_win') {
+        // A função move() já chamou o menu de fim de jogo.
+        console.log("Computador venceu o jogo!");
+        return;
+    }
 
     // após mover, atualiza turno e UI conforme as regras
     if (result === 'success') {
-        // Se o dado não for 1/4/6, passa a vez (conforme teu código de jogador)
         if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
             playerTurn = 'red';
             resetDiceUI();
             showMessage("Computador jogou. A tua vez.", 'info');
             updateTurnIndicator();
         } else {
-            // IA joga de novo -> definir comportamento: para simplificar, IA lança de novo automaticamente
-            showMessage("Computador joga de novo por ter rolado " + diceValue, 'info');
+            showMessage("Computador joga de novo...", 'info');
             diceValue = 0;
             resetDiceUI();
             updateTurnIndicator();
-            handleAITurn_MonteCarloRandom(simulationsPerMove); // IA joga de novo (recursivo)
+            // ADAPTADO: Delay de 2 segundos
+            setTimeout(() => {
+                handleAITurn_MonteCarloRandom(simulationsPerMove, 0); // IA joga de novo
+            }, 2000);
         }
     } else if (result === 'reroll_only') {
-        // IA tem de jogar de novo (dado 4 ou 6)
+        showMessage("Computador não pode mover, mas joga de novo...", 'info');
         diceValue = 0;
         resetDiceUI();
         updateTurnIndicator();
-        handleAITurn_MonteCarloRandom(simulationsPerMove);
+        // ADAPTADO: Delay de 2 segundos
+        setTimeout(() => {
+            handleAITurn_MonteCarloRandom(simulationsPerMove, 0);
+        }, 2000);
     } else {
-        // fail -> se não tiver jogadas válidas IA passa a vez
+        // fail
         playerTurn = 'red';
         resetDiceUI();
         showMessage("Computador não pôde mover e passou a vez.", 'info');
@@ -444,4 +479,3 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
 
 // Export (se estiveres a usar módulos)
 // export { handleAITurn, monteCarloEvaluateMoves };
-

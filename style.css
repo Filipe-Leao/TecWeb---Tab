@@ -480,24 +480,70 @@ body {
 }
 
 #moveSelector {
-    display: none;
-    gap: 4px;
+    /* display: none; -> 'oculto' class já trata disto */
+    gap: 10px;
+    display: flex; /* Adicionado para alinhar */
+    flex-direction: column; /* Adicionado */
     justify-content: center;
-    margin-top: 30px;
+    /* margin-top: 30px; -> Removido, agora é 'fixed' */
+
+    background: #f5e8e0;
+    border: 3px solid #8b5a5a;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2000; /* Acima do overlay */
 }
 
-.move_up {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    background-color: black;
+#moveSelector p {
+    color: #5a3a3a;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin: 0 0 10px 0;
+    text-align: center;
 }
 
+.move_up,
 .move_down {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    background-color: black;
+   all: unset;
+}
+
+.btn-move {
+    background: #8b5a5a;
+    color: #f5e8e0;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    transition: all 0.3s;
+    display: block;
+    width: 100%;
+}
+.btn-move:hover {
+    background: #6d4545;
+    transform: scale(1.05);
+}
+
+/* NOVOS: Estilos de Destaque de Jogada */
+.square.highlight-start {
+    background: #a5d6a7; /* Verde claro */
+    border-color: #388e3c;
+}
+.square.highlight-end {
+    background: #ef9a9a; /* Vermelho claro */
+    border-color: #d32f2f;
+}
+/* O .selected já existe, mas vamos garantir que se sobrepõe */
+.square.selected {
+    background: #fff59d; /* Amarelo */
+    border-color: #f57f17;
 }
 
 .game-container {
@@ -642,8 +688,8 @@ body {
 .game-page h1 {
     font-size: 4rem;
     color: #8b5a5a; /* bordô */
-    text-shadow: 3px 3px 0px #5a3a3a, 
-                 -1px -1px 0px #5a3a3a,  
+    text-shadow: 3px 3px 0px #5a3a3a,
+                 -1px -1px 0px #5a3a3a,
                  1px -1px 0px #5a3a3a,
                  -1px 1px 0px #5a3a3a,
                  1px 1px 0px #5a3a3a;

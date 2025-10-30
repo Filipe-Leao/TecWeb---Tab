@@ -10,10 +10,10 @@ const configPanel = document.getElementById('configPanel');
 
 loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    
+
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
-    
+
     if (username && password) {
         sessionStorage.setItem('username', username);
         loginPage.classList.add('oculto');
@@ -27,6 +27,13 @@ loginForm.addEventListener('submit', (e) => {
 const btnStartGame = document.getElementById('btnStartGame');
 const gameModeSelect = document.getElementById('gameMode');
 const aiLevelOption = document.getElementById('aiLevelOption');
+
+// Botões do Menu de Fim de Jogo
+const btnDesistir = document.getElementById('btnDesistir');
+const endGameMenu = document.getElementById('endGameMenu');
+const endGameMessage = document.getElementById('endGameMessage');
+const btnVoltarInicio = document.getElementById('btnVoltarInicio');
+const btnJogarNovamente = document.getElementById('btnJogarNovamente');
 
 // Mostrar/ocultar opção de nível da IA conforme o modo de jogo
 gameModeSelect.addEventListener('change', () => {
@@ -59,10 +66,10 @@ btnStartGame.addEventListener('click', () => {
     // Ocultar painel de configurações e mostrar página do jogo
     configPanel.classList.add('oculto');
     gamePage.classList.remove('oculto');
-    
+
     // Criar o tabuleiro com as configurações
     createBoard();
-    
+
     // Se o computador começa, iniciar o turno dele
     if (firstPlayer === 'blue') {
         updateTurnIndicator();
@@ -139,17 +146,10 @@ btnFecharClassificacoesJogo.addEventListener('click', () => {
     overlay.classList.remove('ativo');
 });
 
-// Botão de Desistir
-const btnDesistir = document.getElementById('btnDesistir');
-const endGameMenu = document.getElementById('endGameMenu');
-const endGameMessage = document.getElementById('endGameMessage');
-const btnVoltarInicio = document.getElementById('btnVoltarInicio');
-const btnJogarNovamente = document.getElementById('btnJogarNovamente');
+// --- Bloco de Listeners do Fim de Jogo (agora num só sítio) ---
 
 btnDesistir.addEventListener('click', () => {
-    // Mostrar mensagem de que os Azuis venceram
-    endGameMessage.textContent = 'Os Azuis Venceram!';
-    endGameMenu.classList.remove('oculto');
+    showEndGameMenu('blue'); // Azul (PC) ganha se Vermelho (jogador) desistir
 });
 
 // Voltar à página inicial
@@ -157,11 +157,9 @@ btnVoltarInicio.addEventListener('click', () => {
     endGameMenu.classList.add('oculto');
     gamePage.classList.add('oculto');
     loginPage.classList.remove('oculto');
-    
-    // Limpar sessionStorage
+    overlay.classList.remove('ativo');
+
     sessionStorage.clear();
-    
-    // Resetar formulário de login
     loginForm.reset();
 });
 
@@ -170,20 +168,21 @@ btnJogarNovamente.addEventListener('click', () => {
     endGameMenu.classList.add('oculto');
     gamePage.classList.add('oculto');
     configPanel.classList.remove('oculto');
-    
+    overlay.classList.remove('ativo');
+
     // Resetar variáveis do jogo
     selectedPiece = null;
     diceValue = 0;
     playerTurn = 'red';
     matrix = null;
-    pieces = [];
-    
-    // Resetar o dado
+    pieces = []; // ADICIONE ESTA LINHA
+
     resetDiceUI();
 });
 
+// --- Fim do Bloco de Listeners duplicados ---
 
-// Criar tabuleiro
+// --- Variáveis Globais do Jogo ---
 const board = document.getElementById('board');
 const moveSelector = document.getElementById('moveSelector');
 const moveUpBtn = document.getElementById('move_up');
@@ -203,7 +202,7 @@ let selectedPiece = null;
 let diceValue = 0;
 let playerTurn = 'red';
 let matrix = null;
-let pieces = []; // ADICIONE ESTA LINHA
+let pieces = []; // Esta linha já estava aqui, a de cima era duplicada
 
 // Variável de controlo para a Promise do askDirection
 let resolveAskDirection = null;
@@ -230,13 +229,13 @@ function updateTurnIndicator() {
 function createBoard() {
     const board = document.getElementById('board');
     board.innerHTML = ''; // Limpa o tabuleiro
-    
+
     // Atualiza o CSS grid com o novo tamanho (BOARD_SIZE colunas)
     board.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 50px)`;
-    
+
     // Total de casas = BOARD_SIZE colunas * 4 linhas
     const totalSquares = BOARD_SIZE * NUM_ROWS;
-    
+
     // Inicializa a matriz
     matrix = [];
     for (let row = 0; row < NUM_ROWS; row++) {
@@ -245,57 +244,47 @@ function createBoard() {
             matrix[row][col] = 0;
         }
     }
-    
+
     // Inicializa o array de peças
     pieces = [];
-    
+
     let squareIndex = 0;
     for (let row = 0; row < NUM_ROWS; row++) {
         for (let col = 0; col < BOARD_SIZE; col++) {
+            // ... (criação do square) ...
             const square = document.createElement('div');
             square.className = 'square';
             square.dataset.row = row;
             square.dataset.col = col;
-            
-            // Marcar a última coluna
             if (col === BOARD_SIZE - 1) {
                 square.dataset.lastCol = 'true';
             }
-            
-            // Posicionar peças vermelhas na primeira linha (linha 0)
-            if (row === 0) {
+
+            // ADAPTADO: Posiciona peças em TODAS as casas das linhas 0 e 3
+            if (row === 0) { // Linha 0 (Vermelho)
                 const piece = document.createElement('div');
                 piece.className = 'piece_red';
                 piece.dataset.first_move = 'true';
                 piece.dataset.top_column = 'false';
                 square.appendChild(piece);
-                matrix[row][col] = 1; // 1 representa peça vermelha
-                
-                // Adicionar evento de clique no square
+                matrix[row][col] = 1;
                 square.addEventListener('click', handleClick);
             }
-            // Posicionar peças azuis na última linha (linha 3)
-            else if (row === NUM_ROWS - 1) {
+            else if (row === NUM_ROWS - 1) { // Linha 3 (Azul)
                 const piece = document.createElement('div');
                 piece.className = 'piece_blue';
                 piece.dataset.first_move = 'true';
                 piece.dataset.top_column = 'false';
                 square.appendChild(piece);
-                matrix[row][col] = 2; // 2 representa peça azul
-                
-                // Adicionar evento de clique no square
+                matrix[row][col] = 2;
                 square.addEventListener('click', handleClick);
             }
             else {
-                // Casas vazias também precisam de evento de clique
                 square.addEventListener('click', handleClick);
             }
-            
             board.appendChild(square);
-            squareIndex++;
         }
     }
-    
     updateTurnIndicator();
 }
 
@@ -340,7 +329,7 @@ function handleDiceRoll() {
 }
 
 // Função 'move' retorna 3 estados: 'success', 'reroll_only', 'fail'
-async function move(row, col, diceValue, can_go_up, pieceElement, originalSquareElement) {
+async function move(row, col, diceValue, can_go_up, pieceElement, originalSquareElement, aiMoveChoice = null) { // Adicionado aiMoveChoice
     let targetRow = parseInt(row);
     let targetCol = parseInt(col);
 
@@ -372,52 +361,74 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
             direction = -1;
         }
         targetCol += direction;
+
+        // --- CORREÇÃO DE SINTAXE AQUI ---
         if (targetCol < 0 || targetCol >= BOARD_SIZE) { // MUDADO
             if (targetRow === 0) {
                 targetRow = 1;
                 targetCol = 0;
-            } else if (targetRow === 1) {
-                let moveChoice = 'down';
-                if (pieceElement.dataset.top_column === 'false' && targetCol >= BOARD_SIZE) { // MUDADO
+            } // <-- ESTA CHAVETA '}' ESTAVA EM FALTA
+            else if (targetRow === 1) {
+                let moveChoice = 'down'; // Padrão
+                // Só pergunta se: for 'red' E não tiver subido E estiver no fim
+                if (playerTurn === 'red' && pieceElement.dataset.top_column === 'false' && targetCol >= BOARD_SIZE) {
                     moveChoice = await askDirection();
                 }
+                // Se for 'blue', usa a escolha da IA
+                else if (playerTurn === 'blue') {
+                    moveChoice = aiMoveChoice; // Será 'up' ou 'down'
+                }
+
+                // Aplica a escolha
                 if (moveChoice === 'up' && pieceElement.dataset.top_column === 'false') {
                     pieceElement.dataset.top_column = 'true';
                     targetRow = 0;
-                    targetCol = BOARD_SIZE - 1; // MUDADO
-                } else {
+                    targetCol = BOARD_SIZE - 1;
+                } else { // 'down'
                     targetRow = 2;
-                    targetCol = BOARD_SIZE - 1; // MUDADO
+                    targetCol = BOARD_SIZE - 1;
                 }
-            } else if (targetRow === 2) {
+            }
+            // --- Fim da Adaptação ---
+            else if (targetRow === 2) {
                 targetRow = 1;
                 targetCol = 0;
             } else if (targetRow === 3) {
                 targetRow = 2;
-                targetCol = BOARD_SIZE - 1; // MUDADO
+                targetCol = BOARD_SIZE - 1;
             }
         }
+        // --- FIM DA CORREÇÃO DE SINTAXE ---
     }
+
     const pieceValue = matrix[row][col];
     if (matrix[targetRow][targetCol] === pieceValue) {
         showMessage("Não pode mover, existe uma peça sua na casa de destino.", 'error');
         return 'fail';
     }
+
     const targetSquare = document.querySelector(`.square[data-row='${targetRow}'][data-col='${targetCol}']`);
     if (!targetSquare) {
         showMessage("Erro: Casa de destino não encontrada no DOM.", 'error');
         return 'fail';
     }
+
+    // --- ADAPTADO: Lógica de Captura e Fim de Jogo ---
     if (matrix[targetRow][targetCol] !== 0) {
         showMessage("Capturou uma peça do seu adversário!", 'info');
         targetSquare.innerHTML = '';
+
+        // Verifica se o jogo acabou
+        if (checkWinCondition()) {
+            return 'success_win'; // Retorna estado de vitória
+        }
     }
+    // --- Fim da Adaptação ---
+
     targetSquare.appendChild(pieceElement);
     matrix[targetRow][targetCol] = pieceValue;
     matrix[row][col] = 0;
-    if (originalSquareElement) {
-        originalSquareElement.style.backgroundColor = 'white'; // MUDADO para manter branco
-    }
+
     return 'success';
 }
 
@@ -435,7 +446,8 @@ function resetDiceUI() {
 // Função para pedir direção ao jogador
 function askDirection(){
     return new Promise((resolve) => {
-        moveSelector.style.display = 'grid';
+        moveSelector.classList.remove('oculto'); // Mostra o painel
+        overlay.classList.add('ativo');      // Mostra o overlay
         resolveAskDirection = resolve;
     });
 }
@@ -453,44 +465,55 @@ async function handleClick(e) {
         return;
     }
 
+    // ADAPTADO: Limpa destaques da jogada anterior
+    clearHighlights();
+
     const piece = square.querySelector('.piece_red');
     if (piece) {
+        // ADAPTADO: Destaque de início
+        square.classList.add('selected');
+
         const row = parseInt(square.dataset.row);
         const col = parseInt(square.dataset.col);
         const can_go_up = true;
 
-        const moveResult = await move(row, col, diceValue, can_go_up, piece, square);
+        // Passa 'null' como aiMoveChoice
+        const moveResult = await move(row, col, diceValue, can_go_up, piece, square, null);
+
+        // ADAPTADO: Destaque de fim
+        const sqEnd = piece.parentElement;
+        if (moveResult === 'success' || moveResult === 'success_win') {
+            if (sqEnd && sqEnd.classList.contains('square')) {
+                sqEnd.classList.add('highlight-end');
+            }
+        }
 
         switch (moveResult) {
+            case 'success_win':
+                // O jogo acabou, o menu já foi mostrado pela checkWinCondition
+                break;
             case 'success':
-                clearHighlights();
+                // clearHighlights(); -> Removido para manter o destaque
                 if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
-                    // SUCESSO e PASSA A VEZ
                     showMessage("Movimento bem-sucedido. A passar a vez ao computador...");
-                    handleAITurn(); // Chama o turno do PC
+                    // ADAPTADO: Chama o handleAITurn correto
+                    handleAITurn();
                 } else {
-                    // SUCESSO e JOGA DE NOVO
                     showMessage("Movimento bem-sucedido! Joga novamente. Clique no dado.");
-                    resetDiceUI(); // Reseta para o jogador lançar de novo
+                    resetDiceUI();
                 }
                 break;
-
             case 'reroll_only':
-                // FALHA (1º mov) mas JOGA DE NOVO (dado 4 ou 6)
                 showMessage("Joga novamente! Clique no dado.");
-                resetDiceUI(); // Reseta para o jogador lançar de novo
+                resetDiceUI();
                 break;
-
             case 'fail':
-                // FALHA e NÃO JOGA DE NOVO (dado 2 ou 3)
                 const movedPieces = document.querySelectorAll('.piece_red[data-first_move="false"]');
-
                 if (movedPieces.length === 0) {
-                    // Está preso (só peças na base)
                     showMessage("Não tem jogadas válidas. A passar a vez ao computador...", 'error');
-                    handleAITurn(); // Chama o turno do PC
+                    // ADAPTADO: Chama o handleAITurn correto
+                    handleAITurn();
                 } else {
-                    // Não está preso
                     showMessage("Tente mover outra peça (uma que já não esteja na base).", 'error');
                 }
                 break;
@@ -506,31 +529,25 @@ async function handleClick(e) {
 }
 
 // A função de turno do computador passou a ser fornecida pelo MonteCarlo.js.
-// Certifica-te que `MonteCarlo.js` está incluído antes deste ficheiro (index.html já atualizado).
-// Se por algum motivo MonteCarlo não estiver disponível, podemos fornecer um fallback simples.
 function handleAITurn() {
-    // Preferir a função de Monte Carlo se disponível (não queremos sobrescrever a definição original).
-    if (typeof window.handleAITurn_MonteCarloRandom === 'function') {
-        console.log("Usando Monte Carlo para o turno do computador.");
-        diceValue = 0;
-        console.log("Before ai turn", diceValue)
-        // Chama a versão Monte Carlo (ela controla rerolls/turn switching internamente)
-        handleDiceRoll();
-
-        console.log("Dice value for AI turn:", diceValue);
-
-        return window.handleAITurn_MonteCarloRandom(25, diceValue);
-    }
-
-    // Fallback (comportamento antigo): passa a vez após pequena espera.
     playerTurn = 'blue';
     updateTurnIndicator();
-    showMessage("É a vez do computador... o 'Azul' está a pensar...");
-    setTimeout(() => {
-        showMessage("O computador 'Azul' jogou. É a sua vez.");
-        playerTurn = 'red';
-        resetDiceUI();
-    }, 1500);
+
+    // Verifica se a função MonteCarlo existe (do MonteCarlo.js)
+    if (typeof window.handleAITurn_MonteCarloRandom === 'function') {
+        console.log("A chamar o turno da IA (Monte Carlo)...");
+        // A função MonteCarlo trata de si mesma (lançar dado, delays, passar a vez)
+        window.handleAITurn_MonteCarloRandom(25, 0); // 25 simulações, 0 = força a IA a lançar o dado
+    } else {
+        // Fallback (se MonteCarlo.js falhar a carregar)
+        console.warn("MonteCarlo.js não encontrado. A usar IA de 'placeholder'.");
+        showMessage("É a vez do computador... o 'Azul' está a pensar...");
+        setTimeout(() => {
+            showMessage("O computador 'Azul' jogou. É a sua vez.");
+            playerTurn = 'red';
+            resetDiceUI();
+        }, 1500);
+    }
 }
 
 // Funções de destaque
@@ -541,26 +558,58 @@ function highlight(square) {
 
 function clearHighlights() {
     document.querySelectorAll('.square').forEach(sq => {
-        sq.style.backgroundColor = 'white'; // MUDADO para manter branco
+        // Remove todas as classes de destaque
+        sq.classList.remove('selected');
+        sq.classList.remove('highlight-start');
+        sq.classList.remove('highlight-end');
+        // Remove o estilo inline (se ainda existir de versões antigas)
+        sq.style.backgroundColor = '';
     });
 }
 
 moveUpBtn.addEventListener('click', () => {
     if (resolveAskDirection) {
-        moveSelector.style.display = 'none'; // Esconde o seletor
-        resolveAskDirection('up');       // Resolve a Promise com 'up'
-        resolveAskDirection = null;        // Limpa a variável
+        moveSelector.classList.add('oculto'); // Esconde o painel
+        overlay.classList.remove('ativo');    // Esconde o overlay
+        resolveAskDirection('up');
+        resolveAskDirection = null;
     }
 });
 
 moveDownBtn.addEventListener('click', () => {
     if (resolveAskDirection) {
-        moveSelector.style.display = 'none'; // Esconde o seletor
-        resolveAskDirection('down');     // Resolve a Promise com 'down'
-        resolveAskDirection = null;      // Limpa a variável
+        moveSelector.classList.add('oculto'); // Esconde o painel
+        overlay.classList.remove('ativo');    // Esconde o overlay
+        resolveAskDirection('down');
+        resolveAskDirection = null;
     }
 });
 
 
-dicePanel.addEventListener('click', handleDiceRoll);
+// --- Funções de Fim de Jogo (agora num só sítio) ---
+function showEndGameMenu(winner) {
+    const message = (winner === 'red') ? 'Os Vermelhos Venceram!' : 'Os Azuis Venceram!';
+    endGameMessage.textContent = message;
+    endGameMenu.classList.remove('oculto');
+    overlay.classList.add('ativo'); // Ativa o overlay
+}
 
+function checkWinCondition() {
+    const redPieces = document.querySelectorAll('#board .piece_red');
+    const bluePieces = document.querySelectorAll('#board .piece_blue');
+
+    if (redPieces.length === 0) {
+        // Azul venceu
+        showEndGameMenu('blue');
+        return true;
+    }
+    if (bluePieces.length === 0) {
+        // Vermelho venceu
+        showEndGameMenu('red');
+        return true;
+    }
+    return false;
+}
+
+// --- Listener final ---
+dicePanel.addEventListener('click', handleDiceRoll);

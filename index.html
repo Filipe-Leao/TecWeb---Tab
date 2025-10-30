@@ -6,260 +6,258 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Página de Login (visível inicialmente) -->
-    <div id="loginPage" class="login-page">
-        <header class="main-header">
-            <h1 class="game-title">JOGO TÂB</h1>
-        </header>
+<!-- Página de Login (visível inicialmente) -->
+<div id="loginPage" class="login-page">
+    <header class="main-header">
+        <h1 class="game-title">JOGO TÂB</h1>
+    </header>
 
-        <nav class="main-nav">
-            <button id="btnInstrucoes" class="nav-btn">INSTRUÇÕES</button>
-            <button id="btnClassificacoes" class="nav-btn">CLASSIFICAÇÕES</button>
-        </nav>
+    <nav class="main-nav">
+        <button id="btnInstrucoes" class="nav-btn">INSTRUÇÕES</button>
+        <button id="btnClassificacoes" class="nav-btn">CLASSIFICAÇÕES</button>
+    </nav>
 
-        <div id="overlay" class="overlay"></div>
+    <div id="overlay" class="overlay"></div>
 
-        <div id="instrucoes" class="instrucoes-ocultas">
+    <div id="instrucoes" class="instrucoes-ocultas">
 
-            <h2>Como Jogar</h2>
-            <ul>
-                <li><strong>Lançar o dado:</strong> Clique no painel "Dado de Paus" para lançar os 4 paus.</li>
-                <li><strong>Valores do dado:</strong> 
-                    <ul>
-                        <li>0 paus claros = 6</li>
-                        <li>1, 2, 3 ou 4 paus claros = esse número</li>
-                    </ul>
-                </li>
-                <li><strong>Primeiro movimento:</strong> Cada peça só pode mover 1 casa no primeiro movimento.</li>
-                <li><strong>Selecionar peça:</strong> Após lançar o dado, clique na peça que deseja mover.</li>
-                <li><strong>Mudança de linha:</strong> Quando chegar ao fim de uma linha, pode escolher subir ou descer ("Move UP" / "Move DOWN").</li>
-            </ul>
+        <h2>Como Jogar</h2>
+        <ul>
+            <li><strong>Lançar o dado:</strong> Clique no painel "Dado de Paus" para lançar os 4 paus.</li>
+            <li><strong>Valores do dado:</strong>
+                <ul>
+                    <li>0 paus claros = 6</li>
+                    <li>1, 2, 3 ou 4 paus claros = esse número</li>
+                </ul>
+            </li>
+            <li><strong>Primeiro movimento:</strong> Cada peça só pode mover 1 casa no primeiro movimento.</li>
+            <li><strong>Selecionar peça:</strong> Após lançar o dado, clique na peça que deseja mover.</li>
+            <li><strong>Mudança de linha:</strong> Quando chegar ao fim de uma linha, pode escolher subir ou descer ("Move UP" / "Move DOWN").</li>
+        </ul>
 
-            <h2>Regras Importantes</h2>
-            <ul>
-                <li>Não pode mover para uma casa ocupada por outra peça sua.</li>
-                <li>Se mover para uma casa com peça adversária, captura-a (remove do jogo).</li>
-                <li>Com dado 1, 4 ou 6, <strong>joga novamente</strong>.</li>
-                <li>Com dado 2 ou 3, <strong>passa a vez</strong> ao adversário após mover.</li>
-            </ul>
+        <h2>Regras Importantes</h2>
+        <ul>
+            <li>Não pode mover para uma casa ocupada por outra peça sua.</li>
+            <li>Se mover para uma casa com peça adversária, captura-a (remove do jogo).</li>
+            <li>Com dado 1, 4 ou 6, <strong>joga novamente</strong>.</li>
+            <li>Com dado 2 ou 3, <strong>passa a vez</strong> ao adversário após mover.</li>
+        </ul>
 
-            <h2>Vitória</h2>
-            <p>Ganha quem conseguir levar todas as peças ao lado oposto primeiro ou eliminar todas as peças adversárias.</p>
-            
-            <button id="btnFecharInstrucoes">Fechar</button>
-        </div>
+        <h2>Vitória</h2>
+        <p>Ganha quem conseguir levar todas as peças ao lado oposto primeiro ou eliminar todas as peças adversárias.</p>
 
-        <div id="classificacoes" class="classificacoes-ocultas">
-            <h2>Classificações</h2>
-            <h2>(mero exemplo)</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Posição</th>
-                        <th>Jogador</th>
-                        <th>Vitórias</th>
-                        <th>Derrotas</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1º</td>
-                        <td>Jogador 1</td>
-                        <td>10</td>
-                        <td>2</td>
-                    </tr>
-                    <tr>
-                        <td>2º</td>
-                        <td>Jogador 2</td>
-                        <td>8</td>
-                        <td>4</td>
-                    </tr>
-                    <!-- Adicione mais linhas conforme necessário -->
-                </tbody>
-            </table>
-            <button id="btnFecharClassificacoes">Fechar</button>
-        </div>
-
-        <div class="login-container">
-            <h2>LOG-IN</h2>
-            <form id="loginForm">
-                <label for="username">USER</label>
-                <input type="text" id="username" placeholder="Insert your username" required>
-                
-                <label for="password">SENHA</label>
-                <input type="password" id="password" placeholder="Insert your password" required>
-                
-                <button type="submit" class="btn-enviar">ENVIAR</button>
-            </form>
-        </div>
+        <button id="btnFecharInstrucoes">Fechar</button>
     </div>
 
-    <!-- Painel de Configurações (oculto inicialmente) -->
-    <div id="configPanel" class="config-panel oculto">
-        <div class="config-container">
-            <h2>Configurações do Jogo</h2>
-            
-            <div class="config-option">
-                <label for="boardSize">Tamanho do Tabuleiro:</label>
-                <select id="boardSize">
-                    <option value="7">7 casas</option>
-                    <option value="9" selected>9 casas</option>
-                    <option value="11">11 casas</option>
-                    <option value="13">13 casas</option>
-                    <option value="15">15 casas</option>
-                </select>
-            </div>
-
-            <div class="config-option">
-                <label for="gameMode">Modo de Jogo:</label>
-                <select id="gameMode">
-                    <option value="ai">Contra o Computador</option>
-                </select>
-            </div>
-
-            <div class="config-option">
-                <label for="firstPlayer">Primeiro Jogador:</label>
-                <select id="firstPlayer">
-                    <option value="red">Vermelho (Você)</option>
-                    <option value="blue">Azul (Computador)</option>
-                </select>
-            </div>
-
-            <div class="config-option" id="aiLevelOption">
-                <label for="aiLevel">Nível da IA:</label>
-                <select id="aiLevel">
-                    <option value="easy">Fácil</option>
-                </select>
-            </div>
-
-            <button id="btnStartGame" class="btn-start-game">Começar Jogo</button>
-        </div>
+    <div id="classificacoes" class="classificacoes-ocultas">
+        <h2>Classificações</h2>
+        <h2>(mero exemplo)</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Posição</th>
+                <th>Jogador</th>
+                <th>Vitórias</th>
+                <th>Derrotas</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>1º</td>
+                <td>Jogador 1</td>
+                <td>10</td>
+                <td>2</td>
+            </tr>
+            <tr>
+                <td>2º</td>
+                <td>Jogador 2</td>
+                <td>8</td>
+                <td>4</td>
+            </tr>
+            <!-- Adicione mais linhas conforme necessário -->
+            </tbody>
+        </table>
+        <button id="btnFecharClassificacoes">Fechar</button>
     </div>
 
-    <!-- Página do Jogo (oculta inicialmente) -->
-    <div id="gamePage" class="game-page oculto">
+    <div class="login-container">
+        <h2>LOG-IN</h2>
+        <form id="loginForm">
+            <label for="username">USER</label>
+            <input type="text" id="username" placeholder="Insert your username" required>
 
-        <button id="btnInstrucoesJogo" class="btn-instrucoes-jogo">Instruções</button>
-        <button id="btnClassificacoesJogo" class="btn-classificacoes-jogo">Classificações</button>
+            <label for="password">SENHA</label>
+            <input type="password" id="password" placeholder="Insert your password" required>
 
-        <div id="instrucoesJogo" class="instrucoes-ocultas">
-            
-            <h2>Como Jogar</h2>
-            <ul>
-                <li><strong>Lançar o dado:</strong> Clique no painel "Dado de Paus" para lançar os 4 paus.</li>
-                <li><strong>Valores do dado:</strong> 
-                    <ul>
-                        <li>0 paus claros = 6</li>
-                        <li>1, 2, 3 ou 4 paus claros = esse número</li>
-                    </ul>
-                </li>
-                <li><strong>Primeiro movimento:</strong> Cada peça só pode mover 1 casa no primeiro movimento.</li>
-                <li><strong>Selecionar peça:</strong> Após lançar o dado, clique numa peça vermelha para movê-la.</li>
-                <li><strong>Mudança de linha:</strong> Quando chegar ao fim de uma linha, pode escolher subir ou descer ("Move UP" / "Move DOWN").</li>
-            </ul>
+            <button type="submit" class="btn-enviar">ENVIAR</button>
+        </form>
+    </div>
+</div>
 
-            <h2>Regras Importantes</h2>
-            <ul>
-                <li>Não pode mover para uma casa ocupada por outra peça sua.</li>
-                <li>Se mover para uma casa com peça adversária, captura-a (remove do jogo).</li>
-                <li>Com dado 1, 4 ou 6, <strong>joga novamente</strong>.</li>
-                <li>Com dado 2 ou 3, <strong>passa a vez</strong> ao adversário após mover.</li>
-            </ul>
+<!-- Painel de Configurações (oculto inicialmente) -->
+<div id="configPanel" class="config-panel oculto">
+    <div class="config-container">
+        <h2>Configurações do Jogo</h2>
 
-            <h2>Vitória</h2>
-            <p>Ganha quem conseguir levar todas as peças ao lado oposto primeiro ou eliminar todas as peças adversárias.</p>
-            
-            <button id="btnFecharInstrucoesJogo">Fechar</button>
+        <div class="config-option">
+            <label for="boardSize">Tamanho do Tabuleiro:</label>
+            <select id="boardSize">
+                <option value="7">7 casas</option>
+                <option value="9" selected>9 casas</option>
+                <option value="11">11 casas</option>
+                <option value="13">13 casas</option>
+                <option value="15">15 casas</option>
+            </select>
         </div>
 
-        <div id="classificacoesJogo" class="classificacoes-ocultas">
-            <h2>Classificações</h2>
-            <h2>(mero exemplo)</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Posição</th>
-                        <th>Jogador</th>
-                        <th>Vitórias</th>
-                        <th>Derrotas</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1º</td>
-                        <td>Jogador 1</td>
-                        <td>10</td>
-                        <td>2</td>
-                    </tr>
-                    <tr>
-                        <td>2º</td>
-                        <td>Jogador 2</td>
-                        <td>8</td>
-                        <td>4</td>
-                    </tr>
-                </tbody>
-            </table>
-            <button id="btnFecharClassificacoesJogo">Fechar</button>
+        <div class="config-option">
+            <label for="gameMode">Modo de Jogo:</label>
+            <select id="gameMode">
+                <option value="ai">Contra o Computador</option>
+            </select>
         </div>
 
-        <h1>Jogo Tâb</h1>
-
-        <div id="message-bar" class="info">
-            Bem-vindo! Clique no dado para começar.
+        <div class="config-option">
+            <label for="firstPlayer">Primeiro Jogador:</label>
+            <select id="firstPlayer">
+                <option value="red">Vermelho (Você)</option>
+                <option value="blue">Azul (Computador)</option>
+            </select>
         </div>
 
-        <div class="game-container">
+        <div class="config-option" id="aiLevelOption">
+            <label for="aiLevel">Nível da IA:</label>
+            <select id="aiLevel">
+                <option value="easy">Fácil</option>
+            </select>
+        </div>
 
-            <div id="board"></div>
+        <button id="btnStartGame" class="btn-start-game">Começar Jogo</button>
+    </div>
+</div>
 
-            <div id="dice-panel">
+<!-- Página do Jogo (oculta inicialmente) -->
+<div id="gamePage" class="game-page oculto">
 
-                <div id="turn-indicator">
-                    <span>Vez do Jogador</span>
-                    <strong id="turn-player-display">Vermelho</strong>
-                </div>
+    <button id="btnInstrucoesJogo" class="btn-instrucoes-jogo">Instruções</button>
+    <button id="btnClassificacoesJogo" class="btn-classificacoes-jogo">Classificações</button>
 
-                <h3>Dado de Paus</h3>
-                <div id="dice-sticks">
-                    <div class="stick"></div>
-                    <div class="stick"></div>
-                    <div class="stick"></div>
-                    <div class="stick"></div>
-                </div>
-                <div id="dice-result">
-                    <span>Valor:</span>
-                    <strong id="dice-value-display">-</strong>
-                </div>
-                <p id="dice-message">Clique aqui para lançar</p>
+    <div id="instrucoesJogo" class="instrucoes-ocultas">
+
+        <h2>Como Jogar</h2>
+        <ul>
+            <li><strong>Lançar o dado:</strong> Clique no painel "Dado de Paus" para lançar os 4 paus.</li>
+            <li><strong>Valores do dado:</strong>
+                <ul>
+                    <li>0 paus claros = 6</li>
+                    <li>1, 2, 3 ou 4 paus claros = esse número</li>
+                </ul>
+            </li>
+            <li><strong>Primeiro movimento:</strong> Cada peça só pode mover 1 casa no primeiro movimento.</li>
+            <li><strong>Selecionar peça:</strong> Após lançar o dado, clique numa peça vermelha para movê-la.</li>
+            <li><strong>Mudança de linha:</strong> Quando chegar ao fim de uma linha, pode escolher subir ou descer ("Move UP" / "Move DOWN").</li>
+        </ul>
+
+        <h2>Regras Importantes</h2>
+        <ul>
+            <li>Não pode mover para uma casa ocupada por outra peça sua.</li>
+            <li>Se mover para uma casa com peça adversária, captura-a (remove do jogo).</li>
+            <li>Com dado 1, 4 ou 6, <strong>joga novamente</strong>.</li>
+            <li>Com dado 2 ou 3, <strong>passa a vez</strong> ao adversário após mover.</li>
+        </ul>
+
+        <h2>Vitória</h2>
+        <p>Ganha quem conseguir levar todas as peças ao lado oposto primeiro ou eliminar todas as peças adversárias.</p>
+
+        <button id="btnFecharInstrucoesJogo">Fechar</button>
+    </div>
+
+    <div id="classificacoesJogo" class="classificacoes-ocultas">
+        <h2>Classificações</h2>
+        <h2>(mero exemplo)</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Posição</th>
+                <th>Jogador</th>
+                <th>Vitórias</th>
+                <th>Derrotas</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>1º</td>
+                <td>Jogador 1</td>
+                <td>10</td>
+                <td>2</td>
+            </tr>
+            <tr>
+                <td>2º</td>
+                <td>Jogador 2</td>
+                <td>8</td>
+                <td>4</td>
+            </tr>
+            </tbody>
+        </table>
+        <button id="btnFecharClassificacoesJogo">Fechar</button>
+    </div>
+
+    <h1>Jogo Tâb</h1>
+
+    <div id="message-bar" class="info">
+        Bem-vindo! Clique no dado para começar.
+    </div>
+
+    <div class="game-container">
+
+        <div id="board"></div>
+
+        <div id="dice-panel">
+
+            <div id="turn-indicator">
+                <span>Vez do Jogador</span>
+                <strong id="turn-player-display">Vermelho</strong>
             </div>
 
-        </div>
-        
-        <div id="moveSelector">
-            <ol>
-                <button id='move_up'>Move UP</button>
-            </ol>
-            <ol>
-                <button id='move_down'>Move Down</button>
-            </ol>
-        </div>
-
-        <button id="btnDesistir" class="btn-desistir">Desistir</button>
-
-        <!-- Menu de Fim de Jogo -->
-        <div id="endGameMenu" class="end-game-menu oculto">
-            <div class="end-game-container">
-                <h2 id="endGameMessage">Os Azuis Venceram!</h2>
-                <div class="end-game-buttons">
-                    <button id="btnVoltarInicio" class="btn-end-game">Voltar à Página Inicial</button>
-                    <button id="btnJogarNovamente" class="btn-end-game">Jogar Novamente</button>
-                </div>
+            <h3>Dado de Paus</h3>
+            <div id="dice-sticks">
+                <div class="stick"></div>
+                <div class="stick"></div>
+                <div class="stick"></div>
+                <div class="stick"></div>
             </div>
+            <div id="dice-result">
+                <span>Valor:</span>
+                <strong id="dice-value-display">-</strong>
+            </div>
+            <p id="dice-message">Clique aqui para lançar</p>
         </div>
 
     </div>
 
-    <script src="MonteCarlo.js"></script>
-    <script src="script.js"></script>
+    <div id="moveSelector" class="oculto">
+        <p>Escolha a sua rota:</p>
+        <button id='move_up' class="btn-move">Subir (Linha 0)</button>
+        <button id='move_down' class="btn-move">Descer (Linha 2)</button>
+    </div>
+
+    <button id="btnDesistir" class="btn-desistir">Desistir</button>
+
+    <!-- Menu de Fim de Jogo -->
+    <div id="endGameMenu" class="end-game-menu oculto">
+        <div class="end-game-container">
+            <h2 id="endGameMessage">Os Azuis Venceram!</h2>
+            <div class="end-game-buttons">
+                <button id="btnVoltarInicio" class="btn-end-game">Voltar à Página Inicial</button>
+                <button id="btnJogarNovamente" class="btn-end-game">Jogar Novamente</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="script.js"></script>
+<script src="MonteCarlo.js"></script>
+
 </body>
 </html>
