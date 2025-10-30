@@ -876,7 +876,7 @@ function handleAITurn() {
     if (typeof window.handleAITurn_MonteCarloRandom === 'function') {
         console.log("A chamar o turno da IA (Monte Carlo)...");
         // A função MonteCarlo trata de si mesma (lançar dado, delays, passar a vez)
-        window.handleAITurn_MonteCarloRandom(25, 0); // 25 simulações, 0 = força a IA a lançar o dado
+        window.handleAITurn_MonteCarloRandom(1000, 0); // 25 simulações, 0 = força a IA a lançar o dado
     } else {
         // Fallback (se MonteCarlo.js falhar a carregar)
         console.warn("MonteCarlo.js não encontrado. A usar IA de 'placeholder'.");
@@ -885,7 +885,7 @@ function handleAITurn() {
             showMessage("O computador 'Azul' jogou. É a sua vez.");
             playerTurn = 'red';
             resetDiceUI();
-        }, 1500);
+        }, 500);
     }
 }
 

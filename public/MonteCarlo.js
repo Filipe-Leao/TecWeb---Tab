@@ -83,13 +83,6 @@ function rollDiceForAI() {
 
 // Direção de avanço por linha segundo as tuas regras (lembrando a inversão de origem)
 function rowDirection(row) {
-    // pelas tuas regras:
-    // - 1ª e 3ª linhas (índices 0 e 2 no teu sistema) avançam da direita para a esquerda?
-    //   No teu código original definiste: "1ª e 3ª linhas: esquerda -> direita" mas com inversão.
-    // O teu move() original usa:
-    // if (targetRow === 1 || targetRow === 3) direction = 1;
-    // else if (targetRow === 0 || targetRow === 2) direction = -1;
-    // Vamos replicar exactamente essa lógica aqui:
     if (row === 1 || row === 3) {
         return 1;
     } else if (row === 0 || row === 2) {
@@ -106,8 +99,6 @@ function rowDirection(row) {
 // - não lida com 'askDirection' interativo: assume preferência 'down' quando aplicável.
 function legalMovesForDice(state, playerValue, diceValue) {
     const moves = [];
-    // Para replicar precisamente a lógica de `move()` fazemos uma simulação passo-a-passo
-    // por cada peça e geramos todas as ramificações possíveis (quando existe escolha up/down).
     for (let r = 0; r < NUM_LINES; r++) {
         for (let c = 0; c < NUM_COLS; c++) {
             if (state.matrix[r][c] !== playerValue) continue;
@@ -115,13 +106,10 @@ function legalMovesForDice(state, playerValue, diceValue) {
 
             // Regra: primeiro movimento só pode ser com 1
             if (meta.first_move && diceValue !== 1) {
-                // No jogo real isto resulta em 'fail' ou 'reroll_only' (4/6 case).
-                // Para efeitos de listar movimentos possíveis, não consideramos movimentos quando
-                // a peça está ainda em first_move e o dado != 1.
                 continue;
             }
 
-            // estados possíveis após cada passo: array de objetos { row, col, top_column }
+            // estados possíveis após cada passo: array de objetos { row, col, top_column, first_move }
             let states = [{ row: r, col: c, top_column: !!meta.top_column, first_move: !!meta.first_move }];
 
             for (let step = 0; step < diceValue; step++) {
@@ -254,7 +242,6 @@ function winnerOfState(state) {
             if (state.matrix[r][c] === 2) countBlue++;
         }
     }
-    if (countRed === 0 && countBlue === 0) return 0;
     if (countRed === 0) return 2;
     if (countBlue === 0) return 1;
     return 0;
@@ -263,8 +250,22 @@ function winnerOfState(state) {
 // --------------------- playout aleatório (simulação) ---------------------
 
 function randomDiceRollSimulation() {
-    // usa distribuição uniforme 1..6 para as simulações (mais simples)
-    return Math.floor(Math.random() * 6) + 1;
+    let tab = 0;
+    let val = 0;
+    for (let i = 0; i < 4; i++){
+        let prob = Math.random();
+        if (prob >= 0.50){
+            tab++;
+        }
+    }
+    if (tab === 0){
+        val = 6;
+    }
+    else{
+        val = tab;
+    }
+
+    return val;
 }
 
 function randomPlayoutFrom(state, maxDepth = 200) {
@@ -275,9 +276,10 @@ function randomPlayoutFrom(state, maxDepth = 200) {
         const dice = randomDiceRollSimulation();
         const moves = legalMovesForDice(s, playerValue, dice);
         if (moves.length === 0) {
-            // sem jogadas válidas: ou passa a vez ou (se tiver possibilidade de reroll) rerola -
-            // para a simulação simplificamos: passa a vez
-            s.currentPlayer = (s.currentPlayer === 'red') ? 'blue' : 'red';
+            if (dice !== 1 && dice !== 4 && dice !== 6) {
+                // sem jogadas válidas e não pode rerolar: passa a vez
+                s.currentPlayer = (s.currentPlayer === 'red') ? 'blue' : 'red';
+            }
             depth++;
             continue;
         }
@@ -399,7 +401,7 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
             // ADAPTADO: Delay de 2 segundos
             setTimeout(() => {
                 handleAITurn_MonteCarloRandom(simulationsPerMove, 0); // IA joga de novo
-            }, 2000);
+            }, 1500);
             return;
         }
     }
@@ -482,6 +484,3 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
 
 window.legalMovesForDice = legalMovesForDice;
 window.buildStateFromDOM = buildStateFromDOM;
-
-// Export (se estiveres a usar módulos)
-// export { handleAITurn, monteCarloEvaluateMoves };
