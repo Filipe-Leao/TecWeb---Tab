@@ -203,6 +203,8 @@ let diceValue = 0;
 let playerTurn = 'red';
 let matrix = null;
 let pieces = []; // Esta linha já estava aqui, a de cima era duplicada
+let red_can_move = false;
+let blue_can_move = false;
 
 // Variável de controlo para a Promise do askDirection
 let resolveAskDirection = null;
@@ -316,7 +318,7 @@ function rollDice() {
 }
 
 // Função para lidar com o clique no painel do dado
-function handleDiceRoll() {
+async function handleDiceRoll() {
     if (diceValue !== 0) {
         showMessage("Já lançou o dado. Mova uma peça!", 'error');
         return;
@@ -326,6 +328,40 @@ function handleDiceRoll() {
         return;
     }
     rollDice();
+
+    if (!red_can_move  && diceValue !== 1 && playerTurn === 'red') {
+        showMessage("A peça vermelha não pode se mover neste turno.", 'error');
+        if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
+            showMessage("A passar a vez ao computador...", 'error');
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            handleAITurn();
+        } else {
+            showMessage("Rode novamente o dado! Clique no dado.");
+            showMessage("A passar a vez ao computador...", 'error');
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            resetDiceUI();
+        }
+
+        return;
+    }
+    else {
+        red_can_move = true;
+    }
+
+    if (!blue_can_move  && diceValue !== 1 && playerTurn === 'blue') {
+        showMessage("A peça azul não pode se mover neste turno.", 'error');
+        if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
+            showMessage("A passar a vez ao jogador...", 'error');
+        } else {
+            showMessage("Rode novamente o dado! Clique no dado.");
+            handleAITurn();
+        }
+
+        return;
+    }
+    else {
+        blue_can_move = true;
+    }
 }
 
 // Função 'move' retorna 3 estados: 'success', 'reroll_only', 'fail'
@@ -452,6 +488,121 @@ function askDirection(){
     });
 }
 
+async function highlightMove(row, col, diceValue, can_go_up, pieceElement, originalSquareElement) {
+    let targetRow = parseInt(row);
+    let targetCol = parseInt(col);
+
+    console.log("Initial position:", targetRow, targetCol, pieceElement);
+    let direction = 0;
+
+    if (pieceElement.dataset.first_move === 'true' && diceValue !== 1) {
+        showMessage("No primeiro movimento, só se pode mover 1 casa.", 'error');
+        if (diceValue === 4 || diceValue === 6){
+            return 'reroll_only';
+        }
+        return 'fail';
+    }
+
+    // Loop de movimento
+    for (let k = 0; k < diceValue; k++) {
+        if (pieceElement.dataset.first_move === 'true') {
+            if (targetRow === 0 && targetCol === BOARD_SIZE - 1) { // MUDADO
+                targetCol -= 1;
+            }
+        }
+        if (targetRow === 1 || targetRow === 3) {
+            direction = 1;
+        } else if (targetRow === 0 || targetRow === 2) {
+            direction = -1;
+        }
+        targetCol += direction;
+        if (targetCol < 0 || targetCol >= BOARD_SIZE) { // MUDADO
+            if (targetRow === 0) {
+                targetRow = 1;
+                targetCol = 0;
+            } else if (targetRow === 1) {
+                let moveChoice = 'down';
+                if (pieceElement.dataset.top_column === 'false' && targetCol >= BOARD_SIZE) { // MUDADO
+                    moveChoice = await askDirection();
+                }
+                if (moveChoice === 'up' && pieceElement.dataset.top_column === 'false') {
+                    targetRow = 0;
+                    targetCol = BOARD_SIZE - 1; // MUDADO
+                } else {
+                    targetRow = 2;
+                    targetCol = BOARD_SIZE - 1; // MUDADO
+                }
+            } else if (targetRow === 2) {
+                targetRow = 1;
+                targetCol = 0;
+            } else if (targetRow === 3) {
+                targetRow = 2;
+                targetCol = BOARD_SIZE - 1; // MUDADO
+            }
+        }
+    }
+
+    const targetSquare = document.querySelector(`.square[data-row='${targetRow}'][data-col='${targetCol}']`);
+    const currentTarget = document.querySelector(`.square[data-row='${row}'][data-col='${col}']`);
+
+
+    if (!targetSquare) {
+        showMessage("Casa de destino inválida.", "error");
+        return 'fail';
+    }
+
+    highlight(targetSquare);
+
+    // --- Espera o clique do jogador para confirmar ---
+    const confirmation = await waitForClickOnSquare(targetSquare, currentTarget);
+
+    clearHighlights();
+
+    if (!confirmation) {
+        showMessage("Movimento cancelado.", "error");
+        return 'cancel';
+    }
+
+    // Se confirmou, devolve o square para mover
+    return targetSquare;
+}
+
+function waitForClickOnSquare(squareElement, originalSquareElement) {
+    return new Promise((resolve) => {
+        let confirmed = false;
+
+        const handleConfirm = (event) => {
+            if (squareElement.contains(event.target)) {
+                confirmed = true;
+                cleanup();
+                resolve(true); // Confirmado
+            }
+        };
+
+        const handleCancel = (event) => {
+            if (!squareElement.contains(event.target)) {
+                cleanup();
+                resolve(false); // Cancelado
+            }
+        };
+
+        function cleanup() {
+            squareElement.removeEventListener("click", handleConfirm);
+            document.removeEventListener("click", handleCancel, true);
+        }
+
+        // Espera um pequeno atraso antes de ativar o listener global,
+        // evitando capturar o mesmo clique que selecionou a peça
+        setTimeout(() => {
+            squareElement.addEventListener("click", handleConfirm);
+            originalSquareElement.addEventListener("click", handleConfirm);
+            document.addEventListener("click", handleCancel, true);
+        }, 100);
+    });
+}
+
+
+
 // Função para lidar com o clique numa casa
 async function handleClick(e) {
     const square = e.currentTarget;
@@ -460,6 +611,7 @@ async function handleClick(e) {
         showMessage("Clique no painel 'Dado de Paus' para lançar o dado primeiro!", 'error');
         return;
     }
+
     if (playerTurn !== 'red') {
         showMessage("É a vez do computador, por favor aguarde.", 'error');
         return;
@@ -478,10 +630,28 @@ async function handleClick(e) {
         const can_go_up = true;
 
         // Passa 'null' como aiMoveChoice
-        const moveResult = await move(row, col, diceValue, can_go_up, piece, square, null);
 
         // ADAPTADO: Destaque de fim
         const sqEnd = piece.parentElement;
+
+        const confirmTarget = await highlightMove(row, col, diceValue, can_go_up, piece, square);
+
+        let moveResult = 'move_not_confirmed';
+
+        // Só permite mover se o jogador confirmou o clique e devolveu uma casa válida
+        if (confirmTarget instanceof HTMLElement && confirmTarget.classList.contains('square')) {
+            // Jogador confirmou corretamente
+            moveResult = await move(row, col, diceValue, can_go_up, piece, square, null);
+        } else if (confirmTarget === 'cancel' || confirmTarget === false) {
+            showMessage("Movimento cancelado. Selecione outra peça.", "error");
+        } else if (confirmTarget === 'reroll_only'){
+            showMessage("Joga novamente! Clique no dado.");
+            resetDiceUI();
+        } else {
+            showMessage("Tem de clicar na casa destacada para confirmar o movimento.", "error");
+        }
+
+
         if (moveResult === 'success' || moveResult === 'success_win') {
             if (sqEnd && sqEnd.classList.contains('square')) {
                 sqEnd.classList.add('highlight-end');
@@ -516,6 +686,9 @@ async function handleClick(e) {
                 } else {
                     showMessage("Tente mover outra peça (uma que já não esteja na base).", 'error');
                 }
+                break;
+            case 'move_not_confirmed':
+                showMessage("Movimento não confirmado. Selecione outra peça para mover.", 'error');
                 break;
         }
 
@@ -553,17 +726,13 @@ function handleAITurn() {
 // Funções de destaque
 function highlight(square) {
     clearHighlights();
-    square.style.backgroundColor = '#ffc';
+    square.classList.add('highlight-end');
 }
+
 
 function clearHighlights() {
     document.querySelectorAll('.square').forEach(sq => {
-        // Remove todas as classes de destaque
-        sq.classList.remove('selected');
-        sq.classList.remove('highlight-start');
-        sq.classList.remove('highlight-end');
-        // Remove o estilo inline (se ainda existir de versões antigas)
-        sq.style.backgroundColor = '';
+        sq.classList.remove('selected', 'highlight-start', 'highlight-end', 'highlight-target');
     });
 }
 
