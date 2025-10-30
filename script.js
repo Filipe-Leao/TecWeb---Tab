@@ -257,6 +257,11 @@ function createBoard() {
             square.dataset.row = row;
             square.dataset.col = col;
             
+            // Marcar a última coluna
+            if (col === BOARD_SIZE - 1) {
+                square.dataset.lastCol = 'true';
+            }
+            
             // Posicionar peças vermelhas na primeira linha (linha 0)
             if (row === 0) {
                 const piece = document.createElement('div');

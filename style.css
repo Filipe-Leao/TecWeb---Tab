@@ -283,34 +283,200 @@ body {
 #board {
     display: grid;
     /* grid-template-columns é definido dinamicamente no JavaScript */
-    gap: 4px;
+    gap: 8px;
     justify-content: center;
     margin-top: 30px;
+    padding: 30px;
+    background: linear-gradient(135deg, #8b6f47 0%, #a0826d 50%, #8b6f47 100%);
+    border: 5px solid #5a3a2a;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4),
+                inset 0 2px 10px rgba(0,0,0,0.3);
+    position: relative;
+}
+
+#board::before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    border: 2px solid #6d4a33;
+    border-radius: 10px;
+    pointer-events: none;
 }
 
 .square {
     width: 50px;
     height: 50px;
-    background-color: white !important; /* branco */
-    border: 2px solid #8b5a5a; /* mesma borda */
+    background: radial-gradient(circle at 30% 30%, #f5f5f5, #e0e0e0);
+    border: 3px solid #8b6f47;
+    border-radius: 50%; /* Torna as casas redondas */
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.2),
+                0 2px 5px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+    position: relative;
+}
+
+/* Setas direcionais para indicar movimento */
+.square[data-row="0"]::before,
+.square[data-row="1"]::before,
+.square[data-row="2"]::before,
+.square[data-row="3"]::before {
+    content: '→';
+    position: absolute;
+    font-size: 16px;
+    color: rgba(139, 111, 71, 0.5);
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Linha 0 (peças vermelhas): setas para a esquerda (←) */
+.square[data-row="0"]::before {
+    content: '←';
+}
+
+/* Linha 0: primeira casa com seta diagonal para baixo-esquerda */
+.square[data-row="0"][data-col="0"]::before {
+    content: '↙';
+}
+
+/* Linha 0: última casa com seta diagonal para cima-esquerda */
+.square[data-row="0"][data-last-col="true"]::before {
+    content: '↖';
+}
+
+/* Linha 1: setas para a direita (→) */
+.square[data-row="1"]::before {
+    content: '→';
+}
+
+/* Linha 1: primeira casa com seta diagonal para baixo-direita e para cima-direita */
+.square[data-row="1"][data-col="0"]::before {
+    content: '↘\A↗';
+    white-space: pre;
+}
+
+/* Linha 1: última casa com seta diagonal para cima-direita e para baixo-direita */
+.square[data-row="1"][data-last-col="true"]::before {
+    content: '↗\A↘';
+    white-space: pre;
+}
+
+/* Linha 2: setas para a esquerda (←) */
+.square[data-row="2"]::before {
+    content: '←';
+}
+
+/* Linha 2: primeira casa com seta diagonal para cima-esquerda */
+.square[data-row="2"][data-col="0"]::before {
+    content: '↖';
+}
+
+/* Linha 2: última casa com seta diagonal para baixo-esquerda e cima-esquerda */
+.square[data-row="2"][data-last-col="true"]::before {
+    content: '↙\A↖';
+    white-space: pre;
+}
+
+/* Linha 3 (peças azuis): setas para a DIREITA (→) */
+.square[data-row="3"]::before {
+    content: '→';
+}
+
+/* Linha 3: primeira casa com seta para direita */
+.square[data-row="3"][data-col="0"]::before {
+    content: '→';
+}
+
+/* Linha 3: última casa com seta diagonal para cima-direita */
+.square[data-row="3"][data-last-col="true"]::before {
+    content: '↗';
+}
+
+/* Esconder seta quando há peça na casa */
+.square:has(.piece_red)::before,
+.square:has(.piece_blue)::before {
+    display: none;
+}
+
+.square:hover {
+    transform: scale(1.05);
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.3),
+                0 4px 8px rgba(0,0,0,0.2);
+}
+
+.square::after {
+    content: '';
+    position: absolute;
+    width: 60%;
+    height: 60%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), transparent);
+    border-radius: 50%;
+    top: 10%;
+    left: 10%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.piece_red, .piece_blue {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3),
+                inset 0 -2px 5px rgba(0,0,0,0.2);
+    position: relative;
+    z-index: 2; /* Garante que as peças ficam acima das setas */
+}
+
+.piece_red::before, .piece_blue::before {
+    content: '';
+    position: absolute;
+    top: 15%;
+    left: 20%;
+    width: 40%;
+    height: 30%;
+    background: radial-gradient(ellipse at top left, rgba(255,255,255,0.6), transparent);
+    border-radius: 50%;
+    pointer-events: none;
 }
 
 .piece_red {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    background-color: brown;
+    background: radial-gradient(circle at 30% 30%, #d32f2f, #8b0000);
+    border: 2px solid #5a0000;
+}
+
+.piece_red:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 12px rgba(211, 47, 47, 0.5),
+                inset 0 -2px 5px rgba(0,0,0,0.3);
 }
 
 .piece_blue {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    background-color: blue;
+    background: radial-gradient(circle at 30% 30%, #1976d2, #0d47a1);
+    border: 2px solid #004ba0;
+}
+
+.piece_blue:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 12px rgba(25, 118, 210, 0.5),
+                inset 0 -2px 5px rgba(0,0,0,0.3);
+}
+
+/* Destacar casa selecionada */
+.square.selected {
+    background: radial-gradient(circle at 30% 30%, #fff9c4, #fff176);
+    border-color: #f57f17;
+    box-shadow: inset 0 2px 5px rgba(245, 127, 23, 0.3),
+                0 0 15px rgba(255, 235, 59, 0.6);
 }
 
 #moveSelector {
