@@ -26,7 +26,7 @@ showLoginLink.addEventListener("click", (e) => {
 });
 
 
-const API_BASE = "https://ee16218be8af.ngrok-free.app";
+const API_BASE = "http://localhost:3000";
 // Login form submission
 loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -946,7 +946,7 @@ function checkWinCondition() {
     return false;
 }
 
-const MAX_LOG_ENTRIES = 20; // Limite de entradas no log
+const MAX_LOG_ENTRIES = 10; // Reduzido de 20 para 10
 
 function addLog(playerColor, diceValue) {
     if (!diceLogList) return; // Segurança

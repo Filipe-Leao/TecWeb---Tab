@@ -548,6 +548,7 @@ body {
 .game-container {
     display: flex;
     justify-content: center;
+    align-items: flex-start; /* Alinha ao topo em vez de stretch */
     gap: 20px;
     margin-top: 30px;
 }
@@ -555,12 +556,13 @@ body {
 #dice-panel {
     width: 200px;
     padding: 15px;
-    background-color: rgba(200, 160, 150, 0.92); /* mesma cor do login */
+    background-color: rgba(200, 160, 150, 0.92);
     border: 2px solid #8b5a5a;
     border-radius: 8px;
     text-align: center;
     cursor: default;
     transition: background-color 0.2s;
+    align-self: flex-start; /* Mantém o painel fixo no topo */
 }
 
 #dice-panel:hover {
@@ -704,15 +706,18 @@ body {
     top: 10px;
     left: 10px;
     z-index: 1001;
-    padding: 10px 20px;
+    padding: 12px 30px;
+    width: 220px; /* largura fixa */
     background: #8b5a5a;
     color: #f5e8e0;
     border: 2px solid #5a3a3a;
     border-radius: 8px;
     cursor: pointer;
     font-family: Arial, sans-serif;
+    font-size: 1.1rem;
     font-weight: bold;
     transition: all 0.3s;
+    text-align: center; /* centraliza o texto */
 }
 
 .btn-instrucoes-jogo:hover {
@@ -726,15 +731,18 @@ body {
     top: 60px; /* abaixo do botão de instruções */
     left: 10px;
     z-index: 1001;
-    padding: 10px 20px;
+    padding: 12px 30px;
+    width: 220px; /* largura fixa */
     background: #8b5a5a;
     color: #f5e8e0;
     border: 2px solid #5a3a3a;
     border-radius: 8px;
     cursor: pointer;
     font-family: Arial, sans-serif;
+    font-size: 1.1rem;
     font-weight: bold;
     transition: all 0.3s;
+    text-align: center; /* centraliza o texto */
 }
 
 .btn-classificacoes-jogo:hover {
@@ -889,22 +897,24 @@ body {
     transform: scale(1.02);
 }
 
-/* Botão de Desistir */
+/* Botão de Desistir (agora abaixo das classificações) */
 .btn-desistir {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    top: 110px; /* abaixo do botão de classificações */
+    left: 10px;
     background: #8b5a5a;
     color: #f5e8e0;
     border: 2px solid #5a3a3a;
     padding: 12px 30px;
-    font-size: 1.1rem;
+    width: 220px; /* largura fixa */
     border-radius: 8px;
     cursor: pointer;
     font-family: Arial, sans-serif;
+    font-size: 1.1rem;
     font-weight: bold;
     transition: all 0.3s;
-    z-index: 1000;
+    z-index: 1001;
+    text-align: center; /* centraliza o texto */
 }
 
 .btn-desistir:hover {
@@ -965,4 +975,51 @@ body {
 .btn-end-game:hover {
     background: #6d4545;
     transform: scale(1.05);
+}
+
+#dice-log {
+    margin-top: 20px;
+}
+
+#dice-log h3 {
+    margin-bottom: 10px;
+    color: #5a3a3a;
+    font-size: 1rem;
+}
+
+#dice-log-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 130px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* Estilizar o scrollbar (opcional, funciona no Chrome/Edge/Safari) */
+#dice-log-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+#dice-log-list::-webkit-scrollbar-track {
+    background: rgba(139, 111, 71, 0.1);
+    border-radius: 4px;
+}
+
+#dice-log-list::-webkit-scrollbar-thumb {
+    background: #8b6f47;
+    border-radius: 4px;
+}
+
+#dice-log-list::-webkit-scrollbar-thumb:hover {
+    background: #6d4a33;
+}
+
+#dice-log-list li {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    margin-bottom: 5px;
+    background: rgba(245, 232, 224, 0.5);
+    border-radius: 5px;
 }
