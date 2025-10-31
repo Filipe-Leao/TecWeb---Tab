@@ -2,6 +2,10 @@
 let BOARD_SIZE = 9; // Padrão (número de colunas)
 const NUM_ROWS = 4; // Número fixo de linhas
 
+// Variável global para dificuldade da IA
+let AI_DIFFICULTY = 'medium'; // Padrão: médio
+let AI_SIMULATIONS = 30; // Será ajustado conforme a dificuldade
+
 // Login
 const loginForm = document.getElementById('loginForm');
 const loginPage = document.getElementById('loginPage');
@@ -113,7 +117,7 @@ registerForm.addEventListener("submit", async (e) => {
 });
 
 // Configurações do Jogo
-const btnStartGame = document.getElementById('btnStartGame');
+const btnIniciarJogo = document.getElementById('btnIniciarJogo');
 const gameModeSelect = document.getElementById('gameMode');
 const aiLevelOption = document.getElementById('aiLevelOption');
 
@@ -133,7 +137,7 @@ gameModeSelect.addEventListener('change', () => {
     }
 });
 
-btnStartGame.addEventListener('click', () => {
+btnIniciarJogo.addEventListener('click', () => {
     // Obter configurações escolhidas
     const boardSize = parseInt(document.getElementById('boardSize').value);
     const gameMode = document.getElementById('gameMode').value;
@@ -142,6 +146,26 @@ btnStartGame.addEventListener('click', () => {
 
     // Atualizar tamanho do tabuleiro (número de colunas)
     BOARD_SIZE = boardSize;
+    
+    // Configurar dificuldade da IA
+    AI_DIFFICULTY = aiLevel;
+    
+    // Define o número de simulações conforme a dificuldade
+    switch(AI_DIFFICULTY) {
+        case 'easy':
+            AI_SIMULATIONS = 10; // Fácil: 10 simulações
+            break;
+        case 'medium':
+            AI_SIMULATIONS = 30; // Médio: 30 simulações
+            break;
+        case 'hard':
+            AI_SIMULATIONS = 100; // Difícil: 100 simulações
+            break;
+        default:
+            AI_SIMULATIONS = 30;
+    }
+    
+    console.log(`Dificuldade selecionada: ${AI_DIFFICULTY} (${AI_SIMULATIONS} simulações)`);
 
     // Guardar configurações
     sessionStorage.setItem('boardSize', boardSize);
@@ -875,8 +899,8 @@ function handleAITurn() {
     // Verifica se a função MonteCarlo existe (do MonteCarlo.js)
     if (typeof window.handleAITurn_MonteCarloRandom === 'function') {
         console.log("A chamar o turno da IA (Monte Carlo)...");
-        // A função MonteCarlo trata de si mesma (lançar dado, delays, passar a vez)
-        window.handleAITurn_MonteCarloRandom(1000, 0); // 25 simulações, 0 = força a IA a lançar o dado
+        // Passa o número de simulações configurado
+        window.handleAITurn_MonteCarloRandom(AI_SIMULATIONS, 0); // Usa AI_SIMULATIONS em vez de 1000
     } else {
         // Fallback (se MonteCarlo.js falhar a carregar)
         console.warn("MonteCarlo.js não encontrado. A usar IA de 'placeholder'.");
@@ -955,7 +979,9 @@ function addLog(playerColor, diceValue) {
     const ball = document.createElement('span');
     ball.className = `log-ball ${playerColor}`;
 
-    const text = document.createTextNode(diceValue);
+    const text = document.createElement('span'); // MUDADO: createElement em vez de createTextNode
+    text.textContent = diceValue;
+    text.className = `log-number ${playerColor}`; // ADICIONADO: classe para colorir o número
 
     li.appendChild(ball);
     li.appendChild(text);

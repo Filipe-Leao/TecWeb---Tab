@@ -32,7 +32,6 @@
             </li>
             <li><strong>Primeiro movimento:</strong> Cada peça só pode mover 1 casa no primeiro movimento.</li>
             <li><strong>Selecionar peça:</strong> Após lançar o dado, clique na peça que deseja mover.</li>
-            <li><strong>Mudança de linha:</strong> Quando chegar ao fim de uma linha, pode escolher subir ou descer ("Move UP" / "Move DOWN").</li>
         </ul>
 
         <h2>Regras Importantes</h2>
@@ -113,7 +112,7 @@
         <div class="config-option">
             <label for="gameMode">Modo de Jogo:</label>
             <select id="gameMode">
-                <option value="ai">Contra o Computador</option>
+                <option value="pvc" selected>Jogador vs Computador</option>
             </select>
         </div>
 
@@ -129,10 +128,12 @@
             <label for="aiLevel">Nível da IA:</label>
             <select id="aiLevel">
                 <option value="easy">Fácil</option>
+                <option value="medium" selected>Médio</option>
+                <option value="hard">Difícil</option>
             </select>
         </div>
 
-        <button id="btnStartGame" class="btn-start-game">Começar Jogo</button>
+        <button id="btnIniciarJogo" class="btn-start-game">Iniciar Jogo</button>
     </div>
 </div>
 
@@ -155,7 +156,6 @@
             </li>
             <li><strong>Primeiro movimento:</strong> Cada peça só pode mover 1 casa no primeiro movimento.</li>
             <li><strong>Selecionar peça:</strong> Após lançar o dado, clique numa peça vermelha para movê-la.</li>
-            <li><strong>Mudança de linha:</strong> Quando chegar ao fim de uma linha, pode escolher subir ou descer ("Move UP" / "Move DOWN").</li>
         </ul>
 
         <h2>Regras Importantes</h2>
@@ -168,7 +168,7 @@
         </ul>
 
         <h2>Vitória</h2>
-        <p>Ganha quem primeiro eliminar todas as peças adversárias.</p>
+        <p>Ganha quem conseguir eliminar todas as peças adversárias.</p>
 
         <button id="btnFecharInstrucoesJogo">Fechar</button>
     </div>

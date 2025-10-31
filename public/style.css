@@ -1023,3 +1023,32 @@ body {
     background: rgba(245, 232, 224, 0.5);
     border-radius: 5px;
 }
+
+.log-ball {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.log-ball.red {
+    background: radial-gradient(circle at 30% 30%, #ff6b6b, #c92a2a);
+}
+
+.log-ball.blue {
+    background: radial-gradient(circle at 30% 30%, #74c0fc, #1971c2);
+}
+
+/* Estilos para os números do histórico */
+.log-number {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.log-number.red {
+    color: #c92a2a; /* Vermelho escuro */
+}
+
+.log-number.blue {
+    color: #1971c2; /* Azul escuro */
+}

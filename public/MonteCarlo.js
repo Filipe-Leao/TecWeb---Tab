@@ -434,7 +434,7 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
     // ADAPTADO: Destaque visual da casa final
     const sqEnd = document.querySelector(`.square[data-row='${action.targetRow}'][data-col='${action.targetCol}']`);
     if (result === 'success' || result === 'success_win') {
-        if (sqEnd) sqEnd.classList.add('highlight-end');
+        if (sqEnd) sqEnd.classList.add('highlight-start');
     }
 
     // ADAPTADO: Pequena pausa para ver o destaque
