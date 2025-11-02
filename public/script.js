@@ -182,6 +182,9 @@ btnIniciarJogo.addEventListener('click', () => {
 
     // Criar o tabuleiro com as configurações
     createBoard();
+    
+    // Limpar o histórico ao iniciar novo jogo
+    clearLog();
 
     // Se o computador começa, iniciar o turno dele
     if (firstPlayer === 'blue') {
@@ -322,7 +325,10 @@ btnJogarNovamente.addEventListener('click', () => {
     diceValue = 0;
     playerTurn = 'red';
     matrix = null;
-    pieces = []; // ADICIONE ESTA LINHA
+    pieces = [];
+
+    // Limpar o histórico ao jogar novamente
+    clearLog();
 
     resetDiceUI();
 });
@@ -977,6 +983,13 @@ function addLog(playerColor, diceValue) {
     if (diceLogList.children.length > MAX_LOG_ENTRIES) {
         // Remove o item mais antigo (o último da lista)
         diceLogList.removeChild(diceLogList.lastChild);
+    }
+}
+
+// Função para limpar o histórico
+function clearLog() {
+    if (diceLogList) {
+        diceLogList.innerHTML = ''; // Limpa todos os itens do histórico
     }
 }
 
