@@ -22,19 +22,17 @@ const MAX_PIECES = 12;    // 4
 
 // Constrói um estado puro a partir do DOM + matrix global
 function buildStateFromDOM() {
-    // state: { matrix: [...], meta: [[null|{first_move,top_column}]], currentPlayer: 'red'|'blue' }
     const state = {
         matrix: [],
         meta: [],
         currentPlayer: playerTurn // usa a variável global
     };
 
-    for (let r = 0; r < NUM_LINES; r++) {
+    for (let r = 0; r < NUM_ROWS; r++) { // Usa NUM_ROWS
         state.matrix[r] = [];
         state.meta[r] = [];
-        for (let c = 0; c < NUM_COLS; c++) {
+        for (let c = 0; c < BOARD_SIZE; c++) { // Usa BOARD_SIZE (dinâmico)
             state.matrix[r][c] = matrix[r][c] ?? 0;
-            // tenta ler meta do DOM se existir
             const sq = document.querySelector(`.square[data-row='${r}'][data-col='${c}']`);
             if (sq) {
                 const pieceRed = sq.querySelector('.piece_red');
@@ -57,7 +55,6 @@ function buildStateFromDOM() {
 }
 
 function cloneState(state) {
-    // cópia profunda dos arrays
     const s = {
         matrix: state.matrix.map(row => row.slice()),
         meta: state.meta.map(row => row.map(cell => cell ? { ...cell } : null)),
@@ -99,17 +96,15 @@ function rowDirection(row) {
 // - não lida com 'askDirection' interativo: assume preferência 'down' quando aplicável.
 function legalMovesForDice(state, playerValue, diceValue) {
     const moves = [];
-    for (let r = 0; r < NUM_LINES; r++) {
-        for (let c = 0; c < NUM_COLS; c++) {
+    for (let r = 0; r < NUM_ROWS; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
             if (state.matrix[r][c] !== playerValue) continue;
             const meta = state.meta[r][c] || { first_move: true, top_column: false };
 
-            // Regra: primeiro movimento só pode ser com 1
             if (meta.first_move && diceValue !== 1) {
                 continue;
             }
 
-            // estados possíveis após cada passo: array de objetos { row, col, top_column, first_move }
             let states = [{ row: r, col: c, top_column: !!meta.top_column, first_move: !!meta.first_move }];
 
             for (let step = 0; step < diceValue; step++) {
@@ -117,47 +112,51 @@ function legalMovesForDice(state, playerValue, diceValue) {
                 for (const s of states) {
                     let targetRow = s.row;
                     let targetCol = s.col;
-                    let firstMoveLocal = s.first_move;
+                    let firstMoveLocal = s.first_move; // Usamos a cópia do estado
 
-                    // se for o primeiro passo e first_move estava activo, o move() define first_move=false
-                    // e aplica a correção especial: se estiver em row 0 e coluna final, decrementa coluna
-                    if (firstMoveLocal) {
-                        firstMoveLocal = false; // simula a alteração feita por move()
-                        if (targetRow === 0 && targetCol === NUM_COLS - 1) {
-                            targetCol -= 1;
-                        }
+                    // --- INÍCIO DA CORREÇÃO DA LÓGICA DE MOVIMENTO ---
+                    // Esta lógica agora é IDÊNTICA à da função move() do jogador
+                    let direction = 0;
+                    if (targetRow === 1 || targetRow === 3) {
+                        direction = 1;
+                    } else if (targetRow === 0 || targetRow === 2) {
+                        direction = -1;
                     }
 
-                    // calcula direcção consoante a linha
-                    let dir = 0;
-                    if (targetRow === 1 || targetRow === 3) dir = 1;
-                    else if (targetRow === 0 || targetRow === 2) dir = -1;
-                    targetCol += dir;
+                    if (firstMoveLocal && step === 0) {
+                        firstMoveLocal = false; // Simula a alteração
+                        if (targetRow === 0 && targetCol === BOARD_SIZE - 1) {
+                            targetCol -= 1; // Caso especial do canto
+                        } else {
+                            targetCol += direction; // Movimento normal
+                        }
+                    } else {
+                        targetCol += direction; // Movimento normal
+                    }
+                    // --- FIM DA CORREÇÃO DA LÓGICA DE MOVIMENTO ---
 
-                    // trata saídas do tabuleiro 
-                    if (targetCol < 0 || targetCol >= NUM_COLS) {
+
+                    // trata saídas do tabuleiro
+                    if (targetCol < 0 || targetCol >= BOARD_SIZE) {
                         if (targetRow === 0) {
                             targetRow = 1; targetCol = 0;
                             nextStates.push({ row: targetRow, col: targetCol, top_column: s.top_column, first_move: firstMoveLocal });
                         } else if (targetRow === 1) {
-                            // ramificação: pode escolher subir (up) ou descer (down)
-                            if (!s.top_column && targetCol > NUM_COLS) {
-                                // up -> sobe para row 0, ultima coluna, e define top_column = true
-                                nextStates.push({ row: 0, col: NUM_COLS - 1, top_column: true, first_move: firstMoveLocal });
-                                // down -> vai para row 2, ultima coluna, top_column permanece false
-                                nextStates.push({ row: 2, col: NUM_COLS - 1, top_column: false, first_move: firstMoveLocal });
-                            } else if (s.top_column) {
-                                // se já tiver top_column true sobe automaticamente
-                                nextStates.push({ row: 0, col: NUM_COLS - 1, top_column: true, first_move: firstMoveLocal });
+                            if (!s.top_column && targetCol >= BOARD_SIZE) {
+                                // ramificação: up
+                                nextStates.push({ row: 0, col: BOARD_SIZE - 1, top_column: true, first_move: firstMoveLocal });
+                                // ramificação: down
+                                nextStates.push({ row: 2, col: BOARD_SIZE - 1, top_column: false, first_move: firstMoveLocal });
                             } else {
-                                // caso genérico -> desce
-                                nextStates.push({ row: 2, col: NUM_COLS - 1, top_column: s.top_column, first_move: firstMoveLocal });
+                                // Se não pode ramificar (já subiu ou não está no fim), assume o caminho padrão
+                                targetRow = 2; targetCol = BOARD_SIZE - 1;
+                                nextStates.push({ row: targetRow, col: targetCol, top_column: s.top_column, first_move: firstMoveLocal });
                             }
                         } else if (targetRow === 2) {
                             targetRow = 1; targetCol = 0;
                             nextStates.push({ row: targetRow, col: targetCol, top_column: s.top_column, first_move: firstMoveLocal });
                         } else if (targetRow === 3) {
-                            targetRow = 2; targetCol = NUM_COLS - 1;
+                            targetRow = 2; targetCol = BOARD_SIZE - 1;
                             nextStates.push({ row: targetRow, col: targetCol, top_column: s.top_column, first_move: firstMoveLocal });
                         }
                     } else {
@@ -165,26 +164,29 @@ function legalMovesForDice(state, playerValue, diceValue) {
                         nextStates.push({ row: targetRow, col: targetCol, top_column: s.top_column, first_move: firstMoveLocal });
                     }
                 }
-                // avança para os estados gerados neste passo
                 states = nextStates;
-                // se não houver estados possíveis, podemos abortar
                 if (states.length === 0) break;
             }
 
-            // após todos os passos, cada state representa um destino possível
             for (const dest of states) {
-                // verifica se destino está dentro do tabuleiro
-                if (dest.row < 0 || dest.row >= NUM_LINES || dest.col < 0 || dest.col >= NUM_COLS) continue;
-
-                // destino não pode ter peça da mesma cor
+                if (dest.row < 0 || dest.row >= NUM_ROWS || dest.col < 0 || dest.col >= BOARD_SIZE) continue;
                 if (state.matrix[dest.row][dest.col] === playerValue) continue;
 
-                // cria o movimento: inclui a flag setTopColumn se o destino resultou em top_column true
                 moves.push({ row: r, col: c, targetRow: dest.row, targetCol: dest.col, setTopColumn: !!dest.top_column });
             }
         }
     }
-    return moves;
+    // Filtra movimentos duplicados (caso a ramificação crie destinos iguais)
+    const uniqueMoves = [];
+    const seen = new Set();
+    for (const move of moves) {
+        const key = `${move.row},${move.col}-${move.targetRow},${move.targetCol}-${move.setTopColumn}`;
+        if (!seen.has(key)) {
+            seen.add(key);
+            uniqueMoves.push(move);
+        }
+    }
+    return uniqueMoves;
 }
 
 // Aplica um movimento puramente ao state (sem tocar no DOM). Retorna novo state.
@@ -483,3 +485,4 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
 
 window.legalMovesForDice = legalMovesForDice;
 window.buildStateFromDOM = buildStateFromDOM;
+window.handleAITurn = handleAITurn;
