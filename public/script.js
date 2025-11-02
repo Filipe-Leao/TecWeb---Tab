@@ -72,7 +72,7 @@ loginForm.addEventListener("submit", async (e) => {
       loginPage.classList.add("oculto");
       configPanel.classList.remove("oculto");
 
-      // Aqui você pode inicializar o jogo com os dados do jogador
+      // Inicializar o jogo com os dados do jogador
       document.getElementById("turn-player-display").textContent = data.player.Username;
 
     } catch (err) {
@@ -82,7 +82,7 @@ loginForm.addEventListener("submit", async (e) => {
 });
 
 
-// register form submission
+// Submissão do formulário de registro
 registerForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -153,13 +153,13 @@ btnIniciarJogo.addEventListener('click', () => {
     // Define o número de simulações conforme a dificuldade
     switch(AI_DIFFICULTY) {
         case 'easy':
-            AI_SIMULATIONS = 10; // Fácil: 10 simulações
+            AI_SIMULATIONS = 100;
             break;
         case 'medium':
-            AI_SIMULATIONS = 30; // Médio: 30 simulações
+            AI_SIMULATIONS = 300;
             break;
         case 'hard':
-            AI_SIMULATIONS = 100; // Difícil: 100 simulações
+            AI_SIMULATIONS = 1000;
             break;
         default:
             AI_SIMULATIONS = 30;
@@ -674,9 +674,6 @@ async function highlightMove(row, col, diceValue, can_go_up, pieceElement, origi
 
     // Loop de movimento
     for (let k = 0; k < diceValue; k++) {
-
-        // --- LÓGICA DE MOVIMENTO (CORRIGIDA) ---
-
         // 1. Define sempre a direção
         if (targetRow === 1 || targetRow === 3) {
             direction = 1;
@@ -693,13 +690,11 @@ async function highlightMove(row, col, diceValue, can_go_up, pieceElement, origi
                 targetCol += direction;
             }
         } else {
-            // É um passo normal (k > 0)
             targetCol += direction;
         }
-        // --- FIM DA CORREÇÃO ---
 
 
-        // --- Lógica de transição de linha (sem alteração) ---
+        // Lógica de transição de linha
         if (targetCol < 0 || targetCol >= BOARD_SIZE) {
             if (targetRow === 0) {
                 targetRow = 1;
@@ -707,7 +702,7 @@ async function highlightMove(row, col, diceValue, can_go_up, pieceElement, origi
             } else if (targetRow === 1) {
                 let moveChoice = 'down';
 
-                 if (playerTurn === 'red' && pieceElement.dataset.top_column === 'false' && targetCol >= BOARD_SIZE) {
+                if (playerTurn === 'red' && pieceElement.dataset.top_column === 'false' && targetCol > BOARD_SIZE) {
                     showMessage("Esta jogada leva a uma bifurcação. A escolha aparecerá se confirmar.", "info");
                     targetRow = 1;
                     targetCol = BOARD_SIZE -1;
@@ -759,7 +754,6 @@ async function highlightMove(row, col, diceValue, can_go_up, pieceElement, origi
         return 'cancel';
     }
 
-    // Se confirmou, devolve o square para mover
     return targetSquare;
 }
 
@@ -788,7 +782,6 @@ function waitForClickOnSquare(squareElement, originalSquareElement) {
         }
 
         // Espera um pequeno atraso antes de ativar o listener global,
-        // evitando capturar o mesmo clique que selecionou a peça
         setTimeout(() => {
             squareElement.addEventListener("click", handleConfirm);
             originalSquareElement.addEventListener("click", handleConfirm);
@@ -797,9 +790,6 @@ function waitForClickOnSquare(squareElement, originalSquareElement) {
     });
 }
 
-
-
-// Função para lidar com o clique numa casa
 async function handleClick(e) {
     const square = e.currentTarget;
 
@@ -825,9 +815,7 @@ async function handleClick(e) {
         const col = parseInt(square.dataset.col);
         const can_go_up = true;
 
-        // Passa 'null' como aiMoveChoice
-
-        // ADAPTADO: Destaque de fim
+        // Destaque de fim
         const sqEnd = piece.parentElement;
 
         const confirmTarget = await highlightMove(row, col, diceValue, can_go_up, piece, square);
@@ -836,7 +824,6 @@ async function handleClick(e) {
 
         // Só permite mover se o jogador confirmou o clique e devolveu uma casa válida
         if (confirmTarget instanceof HTMLElement && confirmTarget.classList.contains('square')) {
-            // Jogador confirmou corretamente
             moveResult = await move(row, col, diceValue, can_go_up, piece, square, null);
         } else if (confirmTarget === 'cancel' || confirmTarget === false) {
             showMessage("Movimento cancelado. Selecione outra peça.", "error");
@@ -846,7 +833,6 @@ async function handleClick(e) {
         } else {
             showMessage("Tem de clicar na casa destacada para confirmar o movimento.", "error");
         }
-
 
         if (moveResult === 'success' || moveResult === 'success_win') {
             if (sqEnd && sqEnd.classList.contains('square')) {
@@ -859,10 +845,8 @@ async function handleClick(e) {
                 // O jogo acabou, o menu já foi mostrado pela checkWinCondition
                 break;
             case 'success':
-                // clearHighlights(); -> Removido para manter o destaque
                 if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
                     showMessage("Movimento bem-sucedido. A passar a vez ao computador...");
-                    // ADAPTADO: Chama o handleAITurn correto
                     handleAITurn();
                 } else {
                     showMessage("Movimento bem-sucedido! Joga novamente. Clique no dado.");

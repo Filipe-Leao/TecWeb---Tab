@@ -134,15 +134,14 @@ function legalMovesForDice(state, playerValue, diceValue) {
                     else if (targetRow === 0 || targetRow === 2) dir = -1;
                     targetCol += dir;
 
-                    // trata saídas do tabuleiro (troca de linha)
+                    // trata saídas do tabuleiro 
                     if (targetCol < 0 || targetCol >= NUM_COLS) {
                         if (targetRow === 0) {
                             targetRow = 1; targetCol = 0;
                             nextStates.push({ row: targetRow, col: targetCol, top_column: s.top_column, first_move: firstMoveLocal });
                         } else if (targetRow === 1) {
-                            // aqui move() pergunta ao jogador se top_column === 'false' e targetCol >= numSquares
-                            if (!s.top_column && targetCol >= NUM_COLS) {
-                                // ramificação: pode escolher subir (up) ou descer (down)
+                            // ramificação: pode escolher subir (up) ou descer (down)
+                            if (!s.top_column && targetCol > NUM_COLS) {
                                 // up -> sobe para row 0, ultima coluna, e define top_column = true
                                 nextStates.push({ row: 0, col: NUM_COLS - 1, top_column: true, first_move: firstMoveLocal });
                                 // down -> vai para row 2, ultima coluna, top_column permanece false
@@ -151,7 +150,7 @@ function legalMovesForDice(state, playerValue, diceValue) {
                                 // se já tiver top_column true sobe automaticamente
                                 nextStates.push({ row: 0, col: NUM_COLS - 1, top_column: true, first_move: firstMoveLocal });
                             } else {
-                                // caso genérico (por segurança) -> desce
+                                // caso genérico -> desce
                                 nextStates.push({ row: 2, col: NUM_COLS - 1, top_column: s.top_column, first_move: firstMoveLocal });
                             }
                         } else if (targetRow === 2) {
