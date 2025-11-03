@@ -30,6 +30,12 @@ Import `tab_db.sql`.
 
 Make sure npm is available on your machine.
 
+Install required npm modules
+
+```bash
+npm i express mysql2 cors bcrypt
+```
+
 ---
 
 ### 2) Run the project
