@@ -479,12 +479,10 @@ body {
 }
 
 #moveSelector {
-    /* display: none; -> 'oculto' class já trata disto */
     gap: 10px;
-    display: flex; /* Adicionado para alinhar */
-    flex-direction: column; /* Adicionado */
+    display: flex; /* Para alinhar */
+    flex-direction: column; 
     justify-content: center;
-    /* margin-top: 30px; -> Removido, agora é 'fixed' */
 
     background: #f5e8e0;
     border: 3px solid #8b5a5a;
@@ -530,7 +528,7 @@ body {
     transform: scale(1.05);
 }
 
-/* NOVOS: Estilos de Destaque de Jogada */
+/* Estilos de Destaque de Jogada */
 .square.highlight-start {
     background: #a5d6a7; /* Verde claro */
     border-color: #388e3c;
@@ -573,7 +571,7 @@ body {
     margin-top: 0;
     border-bottom: 2px solid #8b5a5a;
     padding-bottom: 10px;
-    color: #5a3a3a; /* mesma cor das letras do login */
+    color: #5a3a3a;
 }
 
 #dice-sticks {
@@ -619,7 +617,7 @@ body {
 #dice-value-display {
     font-size: 2.5em;
     font-weight: bold;
-    color: #8b5a5a; /* tom bordô */
+    color: #8b5a5a; 
     display: block;
     margin-top: 5px;
 }
@@ -641,8 +639,8 @@ body {
 }
 
 #message-bar.info {
-    background-color: rgba(200, 160, 150, 0.92); /* mesma cor do login */
-    color: #5a3a3a; /* mesma cor das letras do login */
+    background-color: rgba(200, 160, 150, 0.92);
+    color: #5a3a3a;
     border: 2px solid #8b5a5a;
 }
 
@@ -671,24 +669,24 @@ body {
 }
 
 #turn-indicator.red strong {
-    color: brown; /* mesma cor da peça vermelha */
+    color: brown;
 }
 
 #turn-indicator.blue strong {
-    color: blue; /* mesma cor da peça azul */
+    color: blue;
 }
 
 /* Estilos da página do jogo */
 .game-page {
     display: block;
-    background-color: #d4b5a8; /* mesma cor da página de login */
+    background-color: #d4b5a8;
     min-height: 100vh;
     padding: 20px;
 }
 
 .game-page h1 {
     font-size: 4rem;
-    color: #8b5a5a; /* bordô */
+    color: #8b5a5a; 
     text-shadow: 3px 3px 0px #5a3a3a,
                  -1px -1px 0px #5a3a3a,
                  1px -1px 0px #5a3a3a,
@@ -707,7 +705,7 @@ body {
     left: 10px;
     z-index: 1001;
     padding: 12px 30px;
-    width: 220px; /* largura fixa */
+    width: 220px; 
     background: #8b5a5a;
     color: #f5e8e0;
     border: 2px solid #5a3a3a;
@@ -717,7 +715,7 @@ body {
     font-size: 1.1rem;
     font-weight: bold;
     transition: all 0.3s;
-    text-align: center; /* centraliza o texto */
+    text-align: center;
 }
 
 .btn-instrucoes-jogo:hover {
@@ -732,7 +730,7 @@ body {
     left: 10px;
     z-index: 1001;
     padding: 12px 30px;
-    width: 220px; /* largura fixa */
+    width: 220px;
     background: #8b5a5a;
     color: #f5e8e0;
     border: 2px solid #5a3a3a;
@@ -897,7 +895,7 @@ body {
     transform: scale(1.02);
 }
 
-/* Botão de Desistir (agora abaixo das classificações) */
+/* Botão de Desistir */
 .btn-desistir {
     position: fixed;
     top: 110px; /* abaixo do botão de classificações */
@@ -906,7 +904,7 @@ body {
     color: #f5e8e0;
     border: 2px solid #5a3a3a;
     padding: 12px 30px;
-    width: 220px; /* largura fixa */
+    width: 220px;
     border-radius: 8px;
     cursor: pointer;
     font-family: Arial, sans-serif;
@@ -914,7 +912,7 @@ body {
     font-weight: bold;
     transition: all 0.3s;
     z-index: 1001;
-    text-align: center; /* centraliza o texto */
+    text-align: center;
 }
 
 .btn-desistir:hover {
@@ -996,7 +994,7 @@ body {
     padding-right: 5px;
 }
 
-/* Estilizar o scrollbar (opcional, funciona no Chrome/Edge/Safari) */
+/* Estilizar o scrollbar */
 #dice-log-list::-webkit-scrollbar {
     width: 8px;
 }

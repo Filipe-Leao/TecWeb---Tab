@@ -5,7 +5,6 @@ import bcrypt from "bcrypt";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// Para substituir __dirname em ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -33,7 +32,7 @@ const db = await mysql.createConnection({
 app.get('/api/leaderboard', async (req, res) => {
   try {
     const [rows] = await db.query('CALL GetLB()');
-    res.json(rows[0]); // resultado principal do procedure
+    res.json(rows[0]);
   } catch (error) {
     console.error('Erro ao buscar leaderboard:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });

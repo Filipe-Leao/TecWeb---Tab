@@ -2,9 +2,10 @@
 let BOARD_SIZE = 9; // Padrão (número de colunas)
 const NUM_ROWS = 4; // Número fixo de linhas
 
-// Variável global para dificuldade da IA
-let AI_DIFFICULTY = 'medium'; // Padrão: médio
-let AI_SIMULATIONS = 30; // Será ajustado conforme a dificuldade
+let AI_DIFFICULTY = 'medium';
+let AI_SIMULATIONS = 300;
+
+const API_BASE = "http://localhost:3000";
 
 // Login
 const loginForm = document.getElementById('loginForm');
@@ -29,8 +30,6 @@ showLoginLink.addEventListener("click", (e) => {
     loginForm.classList.remove("oculto");
 });
 
-
-const API_BASE = "http://localhost:3000";
 // Login form submission
 loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -144,13 +143,10 @@ btnIniciarJogo.addEventListener('click', () => {
     const firstPlayer = document.getElementById('firstPlayer').value;
     const aiLevel = document.getElementById('aiLevel').value;
 
-    // Atualizar tamanho do tabuleiro (número de colunas)
     BOARD_SIZE = boardSize;
     
-    // Configurar dificuldade da IA
     AI_DIFFICULTY = aiLevel;
     
-    // Define o número de simulações conforme a dificuldade
     switch(AI_DIFFICULTY) {
         case 'easy':
             AI_SIMULATIONS = 100;
@@ -162,7 +158,7 @@ btnIniciarJogo.addEventListener('click', () => {
             AI_SIMULATIONS = 1000;
             break;
         default:
-            AI_SIMULATIONS = 30;
+            AI_SIMULATIONS = 300;
     }
     
     console.log(`Dificuldade selecionada: ${AI_DIFFICULTY} (${AI_SIMULATIONS} simulações)`);
@@ -180,7 +176,6 @@ btnIniciarJogo.addEventListener('click', () => {
     configPanel.classList.add('oculto');
     gamePage.classList.remove('oculto');
 
-    // Criar o tabuleiro com as configurações
     createBoard();
     
     // Limpar o histórico ao iniciar novo jogo
@@ -296,7 +291,6 @@ btnFecharClassificacoesJogo.addEventListener('click', () => {
     overlay.classList.remove('ativo');
 });
 
-// --- Bloco de Listeners do Fim de Jogo (agora num só sítio) ---
 
 btnDesistir.addEventListener('click', () => {
     showEndGameMenu('blue'); // Azul (PC) ganha se Vermelho (jogador) desistir
@@ -327,15 +321,12 @@ btnJogarNovamente.addEventListener('click', () => {
     matrix = null;
     pieces = [];
 
-    // Limpar o histórico ao jogar novamente
     clearLog();
 
     resetDiceUI();
 });
 
-// --- Fim do Bloco de Listeners duplicados ---
 
-// --- Variáveis Globais do Jogo ---
 const board = document.getElementById('board');
 const moveSelector = document.getElementById('moveSelector');
 const moveUpBtn = document.getElementById('move_up');
@@ -356,9 +347,7 @@ let selectedPiece = null;
 let diceValue = 0;
 let playerTurn = 'red';
 let matrix = null;
-let pieces = []; // Esta linha já estava aqui, a de cima era duplicada
-
-// Variável de controlo para a Promise do askDirection
+let pieces = [];
 let resolveAskDirection = null;
 
 // Função para mostrar mensagens ao jogador
@@ -382,15 +371,14 @@ function updateTurnIndicator() {
 // Função de criar o tabuleiro
 function createBoard() {
     const board = document.getElementById('board');
-    board.innerHTML = ''; // Limpa o tabuleiro
+    board.innerHTML = '';
 
-    // Atualiza o CSS grid com o novo tamanho (BOARD_SIZE colunas)
+    // Atualiza o CSS grid com o novo tamanho 
     board.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 50px)`;
 
-    // Total de casas = BOARD_SIZE colunas * 4 linhas
+    // Total de casas
     const totalSquares = BOARD_SIZE * NUM_ROWS;
 
-    // Inicializa a matriz
     matrix = [];
     for (let row = 0; row < NUM_ROWS; row++) {
         matrix[row] = [];
@@ -399,13 +387,10 @@ function createBoard() {
         }
     }
 
-    // Inicializa o array de peças
     pieces = [];
 
-    let squareIndex = 0;
     for (let row = 0; row < NUM_ROWS; row++) {
         for (let col = 0; col < BOARD_SIZE; col++) {
-            // ... (criação do square) ...
             const square = document.createElement('div');
             square.className = 'square';
             square.dataset.row = row;
@@ -414,7 +399,6 @@ function createBoard() {
                 square.dataset.lastCol = 'true';
             }
 
-            // ADAPTADO: Posiciona peças em TODAS as casas das linhas 0 e 3
             if (row === 0) { // Linha 0 (Vermelho)
                 const piece = document.createElement('div');
                 piece.className = 'piece_red';
@@ -480,30 +464,27 @@ async function handleDiceRoll() {
         return;
     }
 
-    rollDice(); // Isto define o 'diceValue' global
+    rollDice();
     addLog('red', diceValue);
 
-    // --- NOVO BLOCO DE VALIDAÇÃO (Corrige o Jogo "Preso") ---
     if (typeof window.legalMovesForDice === 'function') {
         // Usa as funções do MonteCarlo.js para verificar o estado
         const currentState = window.buildStateFromDOM();
         const validMoves = window.legalMovesForDice(currentState, 1, diceValue); // 1 = jogador vermelho
 
         if (validMoves.length === 0) {
-            // NÃO HÁ JOGADAS VÁLIDAS! Este é o bug que reportou.
             showMessage(`Não há jogadas válidas com o dado ${diceValue}.`, 'error');
-
             if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
                 // Dado 2 ou 3: Passa a vez
                 showMessage("A passar a vez ao computador...", 'error');
                 // Espera 2 segundos para a mensagem ser lida
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                await new Promise(resolve => setTimeout(resolve, 1500));
                 handleAITurn();
             } else {
                 // Dado 1, 4, ou 6: Reroll
                 showMessage("Rode novamente o dado! Clique no dado.");
                 // Espera 2 segundos
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                await new Promise(resolve => setTimeout(resolve, 1500));
                 resetDiceUI();
             }
             return; // Impede o resto da função de correr
@@ -523,11 +504,10 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
 
     let first_move_used = false;
 
-    // --- LÓGICA DE FIRST_MOVE (Verificação inicial) ---
     if (pieceElement.dataset.first_move === 'true') {
         if (diceValue === 1) {
             first_move_used = true;
-            pieceElement.dataset.first_move = 'false'; //
+            pieceElement.dataset.first_move = 'false';
         } else {
             showMessage("No primeiro movimento, só se pode mover 1 casa.", 'error');
             if (diceValue === 4 || diceValue === 6){
@@ -536,36 +516,25 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
             return 'fail';
         }
     }
-    // --- FIM DA VERIFICAÇÃO ---
 
     // Loop de movimento
     for (let k = 0; k < diceValue; k++) {
-
-        // --- LÓGICA DE MOVIMENTO (CORRIGIDA) ---
-
-        // 1. Define sempre a direção
         if (targetRow === 1 || targetRow === 3) {
             direction = 1;
         } else if (targetRow === 0 || targetRow === 2) {
             direction = -1;
         }
 
-        // 2. Verifica se é o caso especial (1º passo de 1º mov)
         if (first_move_used && k === 0) {
             if (targetRow === 0 && targetCol === BOARD_SIZE - 1) {
-                targetCol -= 1; // Caso especial do canto
+                targetCol -= 1;
             } else {
-                // É um 1º mov, mas não no canto, move-se normalmente
                 targetCol += direction;
             }
         } else {
-            // É um passo normal (k > 0)
             targetCol += direction;
         }
-        // --- FIM DA CORREÇÃO ---
 
-
-        // --- Lógica de transição de linha (sem alteração) ---
         if (targetCol < 0 || targetCol >= BOARD_SIZE) {
             if (targetRow === 0) {
                 targetRow = 1;
@@ -584,7 +553,7 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
                     pieceElement.dataset.top_column = 'true';
                     targetRow = 0;
                     targetCol = BOARD_SIZE - 1;
-                } else { // 'down'
+                } else {
                     targetRow = 2;
                     targetCol = BOARD_SIZE - 1;
                 }
@@ -602,7 +571,6 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
     const pieceValue = matrix[row][col];
     if (matrix[targetRow][targetCol] === pieceValue) {
         showMessage("Não pode mover, existe uma peça sua na casa de destino.", 'error');
-        // Rollback
         if (first_move_used) {
             pieceElement.dataset.first_move = 'true';
         }
@@ -612,13 +580,12 @@ async function move(row, col, diceValue, can_go_up, pieceElement, originalSquare
     const targetSquare = document.querySelector(`.square[data-row='${targetRow}'][data-col='${targetCol}']`);
     if (!targetSquare) {
         showMessage("Erro: Casa de destino não encontrada no DOM.", 'error');
-        if (first_move_used) { // Rollback
+        if (first_move_used) {
             pieceElement.dataset.first_move = 'true';
         }
         return 'fail';
     }
 
-    // --- Lógica de Captura (sem alteração) ---
     if (matrix[targetRow][targetCol] !== 0) {
         showMessage("Capturou uma peça do seu adversário!", 'info');
         targetSquare.innerHTML = '';
@@ -664,7 +631,6 @@ async function highlightMove(row, col, diceValue, can_go_up, pieceElement, origi
 
     let first_move_used = false;
 
-    // --- LÓGICA DE FIRST_MOVE (Verificação inicial) ---
     if (pieceElement.dataset.first_move === 'true') {
         if (diceValue === 1) {
             first_move_used = true;
@@ -676,18 +642,16 @@ async function highlightMove(row, col, diceValue, can_go_up, pieceElement, origi
             return 'fail';
         }
     }
-    // --- FIM DA VERIFICAÇÃO ---
 
     // Loop de movimento
     for (let k = 0; k < diceValue; k++) {
-        // 1. Define sempre a direção
         if (targetRow === 1 || targetRow === 3) {
             direction = 1;
         } else if (targetRow === 0 || targetRow === 2) {
             direction = -1;
         }
 
-        // 2. Verifica se é o caso especial (1º passo de 1º mov)
+        // Verifica se é o caso especial (1º passo de 1º mov)
         if (first_move_used && k === 0) {
             if (targetRow === 0 && targetCol === BOARD_SIZE - 1) {
                 targetCol -= 1; // Caso especial do canto
@@ -707,7 +671,6 @@ async function highlightMove(row, col, diceValue, can_go_up, pieceElement, origi
                 targetCol = 0;
             } else if (targetRow === 1) {
                 let moveChoice = 'down';
-
                 if (playerTurn === 'red' && pieceElement.dataset.top_column === 'false' && targetCol > BOARD_SIZE) {
                     showMessage("Esta jogada leva a uma bifurcação. A escolha aparecerá se confirmar.", "info");
                     targetRow = 1;
@@ -741,7 +704,7 @@ async function highlightMove(row, col, diceValue, can_go_up, pieceElement, origi
         return 'fail';
     }
 
-    // VERIFICAÇÃO FINAL: Não pode aterrar na própria peça
+    // Não pode aterrar na própria peça
     const pieceValue = matrix[row][col];
     if (matrix[targetRow][targetCol] === pieceValue) {
         showMessage("Não pode mover, existe uma peça sua na casa de destino.", 'error');
@@ -750,7 +713,7 @@ async function highlightMove(row, col, diceValue, can_go_up, pieceElement, origi
 
     highlight(targetSquare);
 
-    // --- Espera o clique do jogador para confirmar ---
+    // Espera o clique do jogador para confirmar
     const confirmation = await waitForClickOnSquare(targetSquare, currentTarget);
 
     clearHighlights();
@@ -809,12 +772,11 @@ async function handleClick(e) {
         return;
     }
 
-    // ADAPTADO: Limpa destaques da jogada anterior
     clearHighlights();
 
     const piece = square.querySelector('.piece_red');
     if (piece) {
-        // ADAPTADO: Destaque de início
+        // Destaque de início
         square.classList.add('selected');
 
         const row = parseInt(square.dataset.row);
@@ -865,7 +827,6 @@ async function handleClick(e) {
                 break;
             case 'fail':
                 showMessage("Jogada inválida. Tente mover outra peça.", 'error');
-                // O 'diceValue' não é resetado, permitindo ao jogador tentar outra peça.
                 break;
             case 'move_not_confirmed':
                 showMessage("Movimento não confirmado. Selecione outra peça para mover.", 'error');
@@ -881,7 +842,6 @@ async function handleClick(e) {
     }
 }
 
-// A função de turno do computador passou a ser fornecida pelo MonteCarlo.js.
 function handleAITurn() {
     playerTurn = 'blue';
     updateTurnIndicator();
@@ -889,10 +849,8 @@ function handleAITurn() {
     // Verifica se a função MonteCarlo existe (do MonteCarlo.js)
     if (typeof window.handleAITurn_MonteCarloRandom === 'function') {
         console.log("A chamar o turno da IA (Monte Carlo)...");
-        // Passa o número de simulações configurado
-        window.handleAITurn_MonteCarloRandom(AI_SIMULATIONS, 0); // Usa AI_SIMULATIONS em vez de 1000
+        window.handleAITurn_MonteCarloRandom(AI_SIMULATIONS, 0);
     } else {
-        // Fallback (se MonteCarlo.js falhar a carregar)
         console.warn("MonteCarlo.js não encontrado. A usar IA de 'placeholder'.");
         showMessage("É a vez do computador... o 'Azul' está a pensar...");
         setTimeout(() => {
@@ -903,7 +861,6 @@ function handleAITurn() {
     }
 }
 
-// Funções de destaque
 function highlight(square) {
     clearHighlights();
     square.classList.add('highlight-end');
@@ -935,7 +892,6 @@ moveDownBtn.addEventListener('click', () => {
 });
 
 
-// --- Funções de Fim de Jogo (agora num só sítio) ---
 function showEndGameMenu(winner) {
     const message = (winner === 'red') ? 'Os Vermelhos Venceram!' : 'Os Azuis Venceram!';
     endGameMessage.textContent = message;
@@ -960,28 +916,28 @@ function checkWinCondition() {
     return false;
 }
 
-const MAX_LOG_ENTRIES = 10; // Reduzido de 20 para 10
+const MAX_LOG_ENTRIES = 10;
 
 function addLog(playerColor, diceValue) {
-    if (!diceLogList) return; // Segurança
+    if (!diceLogList) return; 
 
     const li = document.createElement('li');
     const ball = document.createElement('span');
     ball.className = `log-ball ${playerColor}`;
 
-    const text = document.createElement('span'); // MUDADO: createElement em vez de createTextNode
+    const text = document.createElement('span');
     text.textContent = diceValue;
-    text.className = `log-number ${playerColor}`; // ADICIONADO: classe para colorir o número
+    text.className = `log-number ${playerColor}`;
 
     li.appendChild(ball);
     li.appendChild(text);
 
-    // Adiciona o novo item
-    diceLogList.prepend(li); // Adiciona no topo
+    // Adiciona o novo item no topo
+    diceLogList.prepend(li);
 
     // Limita o número de logs
     if (diceLogList.children.length > MAX_LOG_ENTRIES) {
-        // Remove o item mais antigo (o último da lista)
+        // Remove o item mais antigo
         diceLogList.removeChild(diceLogList.lastChild);
     }
 }
@@ -989,9 +945,8 @@ function addLog(playerColor, diceValue) {
 // Função para limpar o histórico
 function clearLog() {
     if (diceLogList) {
-        diceLogList.innerHTML = ''; // Limpa todos os itens do histórico
+        diceLogList.innerHTML = '';
     }
 }
 
-// --- Listener final ---
 dicePanel.addEventListener('click', handleDiceRoll);

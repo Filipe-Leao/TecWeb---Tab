@@ -1,37 +1,15 @@
-// montecarlo_random.js
-// IA simples: movimentos aleatórios (compatível com o teu board / move() assíncrono)
-
-/*
-  Requisitos (assumidos):
-  - Existe uma variável global `matrix` (numLines x numSquares) com valores:
-      0 = vazio, 1 = peça vermelha (player), 2 = peça azul (IA)
-  - Cada casa tem .square[data-row][data-col] no DOM contendo .piece_red ou .piece_blue
-    com dataset attributes: data-first_move, data-top_column (como no teu código).
-  - Existe uma função async `move(row, col, diceValue, can_go_up, pieceElement, originalSquareElement)`
-    que realiza a animação/atualização no DOM e actualiza a matrix global (essa função foi
-    fornecida por ti).
-  - Existem helpers visuais como showMessage(), resetDiceUI(), updateTurnIndicator() — já referenciados.
-*/
-
-// --------------------- helpers de estado / clonagem ---------------------
-
-// Constantes do teu jogo (garante que batem com o teu script)
-const NUM_LINES = 4;      // 4
-const NUM_COLS = 12;     // 12
-const MAX_PIECES = 12;    // 4
-
 // Constrói um estado puro a partir do DOM + matrix global
 function buildStateFromDOM() {
     const state = {
         matrix: [],
         meta: [],
-        currentPlayer: playerTurn // usa a variável global
+        currentPlayer: playerTurn
     };
 
-    for (let r = 0; r < NUM_ROWS; r++) { // Usa NUM_ROWS
+    for (let r = 0; r < NUM_ROWS; r++) {
         state.matrix[r] = [];
         state.meta[r] = [];
-        for (let c = 0; c < BOARD_SIZE; c++) { // Usa BOARD_SIZE (dinâmico)
+        for (let c = 0; c < BOARD_SIZE; c++) {
             state.matrix[r][c] = matrix[r][c] ?? 0;
             const sq = document.querySelector(`.square[data-row='${r}'][data-col='${c}']`);
             if (sq) {
@@ -63,11 +41,6 @@ function cloneState(state) {
     return s;
 }
 
-// --------------------- utilitário: rolar dado (simples) ---------------------
-
-// Função de rolar o dado para a IA (usa mesma distribuição de 4 paus?)
-// Para simplicidade e velocidade das decisões da IA, usamos uma função que replica
-// a mesma lógica do teu rollDice() mas sem DOM.
 function rollDiceForAI() {
     let tab = 0;
     for (let i = 0; i < 4; i++) {
@@ -76,9 +49,6 @@ function rollDiceForAI() {
     return tab === 0 ? 6 : tab;
 }
 
-// --------------------- regras de movimento (puro estado) ---------------------
-
-// Direção de avanço por linha segundo as tuas regras (lembrando a inversão de origem)
 function rowDirection(row) {
     if (row === 1 || row === 3) {
         return 1;
@@ -89,11 +59,6 @@ function rowDirection(row) {
 }
 
 // Retorna lista de movimentos válidos para um jogador e dadoValue no estado fornecido.
-// Um movimento é representado como {row, col} (origem). A validação segue as tuas regras:
-// - first_move só pode mover 1 na primeira vez.
-// - destino não pode ter peça da mesma cor.
-// - respeita passagem de linhas tal como no teu move().
-// - não lida com 'askDirection' interativo: assume preferência 'down' quando aplicável.
 function legalMovesForDice(state, playerValue, diceValue) {
     const moves = [];
     for (let r = 0; r < NUM_ROWS; r++) {
@@ -114,8 +79,6 @@ function legalMovesForDice(state, playerValue, diceValue) {
                     let targetCol = s.col;
                     let firstMoveLocal = s.first_move; // Usamos a cópia do estado
 
-                    // --- INÍCIO DA CORREÇÃO DA LÓGICA DE MOVIMENTO ---
-                    // Esta lógica agora é IDÊNTICA à da função move() do jogador
                     let direction = 0;
                     if (targetRow === 1 || targetRow === 3) {
                         direction = 1;
@@ -124,17 +87,15 @@ function legalMovesForDice(state, playerValue, diceValue) {
                     }
 
                     if (firstMoveLocal && step === 0) {
-                        firstMoveLocal = false; // Simula a alteração
+                        firstMoveLocal = false;
                         if (targetRow === 0 && targetCol === BOARD_SIZE - 1) {
                             targetCol -= 1; // Caso especial do canto
                         } else {
-                            targetCol += direction; // Movimento normal
+                            targetCol += direction;
                         }
                     } else {
-                        targetCol += direction; // Movimento normal
+                        targetCol += direction; 
                     }
-                    // --- FIM DA CORREÇÃO DA LÓGICA DE MOVIMENTO ---
-
 
                     // trata saídas do tabuleiro
                     if (targetCol < 0 || targetCol >= BOARD_SIZE) {
@@ -176,7 +137,7 @@ function legalMovesForDice(state, playerValue, diceValue) {
             }
         }
     }
-    // Filtra movimentos duplicados (caso a ramificação crie destinos iguais)
+    // Filtra movimentos duplicados
     const uniqueMoves = [];
     const seen = new Set();
     for (const move of moves) {
@@ -189,7 +150,6 @@ function legalMovesForDice(state, playerValue, diceValue) {
     return uniqueMoves;
 }
 
-// Aplica um movimento puramente ao state (sem tocar no DOM). Retorna novo state.
 function applyMoveToState(state, move, playerValue, diceValue) {
     const s = cloneState(state);
     const { row, col, targetRow, targetCol } = move;
@@ -221,11 +181,10 @@ function applyMoveToState(state, move, playerValue, diceValue) {
     return s;
 }
 
-// Verifica condição terminal: um jogador sem peças
 function isTerminalState(state) {
     let countRed = 0, countBlue = 0;
-    for (let r = 0; r < NUM_LINES; r++) {
-        for (let c = 0; c < NUM_COLS; c++) {
+    for (let r = 0; r < NUM_ROWS; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
             if (state.matrix[r][c] === 1) countRed++;
             if (state.matrix[r][c] === 2) countBlue++;
         }
@@ -233,22 +192,20 @@ function isTerminalState(state) {
     if (countRed === 0 || countBlue === 0) return true;
     return false;
 }
-
-// Quem ganhou? retorna 1 (red), 2 (blue), 0 empate/não terminal
+ 
 function winnerOfState(state) {
     let countRed = 0, countBlue = 0;
-    for (let r = 0; r < NUM_LINES; r++) {
-        for (let c = 0; c < NUM_COLS; c++) {
+    for (let r = 0; r < NUM_ROWS; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
             if (state.matrix[r][c] === 1) countRed++;
             if (state.matrix[r][c] === 2) countBlue++;
         }
     }
-    if (countRed === 0) return 2;
-    if (countBlue === 0) return 1;
+    if (countRed === 0) return 2;   // ser vencedor é o azul
+    if (countBlue === 0) return 1;  // ser vencedor é o vermelho
+    // Estado não terminal
     return 0;
 }
-
-// --------------------- playout aleatório (simulação) ---------------------
 
 function randomDiceRollSimulation() {
     let tab = 0;
@@ -278,7 +235,6 @@ function randomPlayoutFrom(state, maxDepth = 200) {
         const moves = legalMovesForDice(s, playerValue, dice);
         if (moves.length === 0) {
             if (dice !== 1 && dice !== 4 && dice !== 6) {
-                // sem jogadas válidas e não pode rerolar: passa a vez
                 s.currentPlayer = (s.currentPlayer === 'red') ? 'blue' : 'red';
             }
             depth++;
@@ -288,12 +244,9 @@ function randomPlayoutFrom(state, maxDepth = 200) {
         s = applyMoveToState(s, mv, playerValue, dice);
         depth++;
     }
-    return winnerOfState(s); // 0 / 1 / 2
+    return winnerOfState(s);
 }
 
-// --------------------- API da IA (aleatória com simulações Monte Carlo simples) ---------------------
-
-// Simples MonteCarlo que avalia cada jogada válida com 'simulations' playouts aleatórios
 async function monteCarloEvaluateMoves(simulationsPerMove = 50, diceValueForThisTurn = null) {
     // constroi estado actual
     const baseState = buildStateFromDOM();
@@ -313,7 +266,6 @@ async function monteCarloEvaluateMoves(simulationsPerMove = 50, diceValueForThis
         return { action: null, diceValue }; // nada a fazer
     }
 
-    // para cada opção corre algumas simulações e conta wins
     const results = legal.map(m => ({ move: m, wins: 0, sims: 0 }));
 
     for (let i = 0; i < legal.length; i++) {
@@ -342,11 +294,7 @@ async function monteCarloEvaluateMoves(simulationsPerMove = 50, diceValueForThis
         };
 }
 
-// --------------------- integração com o teu handleAITurn (executa movimento no DOM) ---------------------
-
-// Esta função faz o turno do AI: rola o dado (visualmente), escolhe jogada (aleatória/MC) e chama move()
 async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue) {
-    // ADAPTADO: Limpa destaques da jogada anterior
     clearHighlights();
 
     console.log("AI Turn começou com diceValue:", diceValue);
@@ -376,7 +324,6 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
         diceValueDisplay.textContent = diceValue;
         diceMessage.textContent = `Computador lançou o dado: ${diceValue}`;
         addLog('blue', diceValue);
-        // --- FIM DA CORREÇÃO ---
     }
 
     // avalia jogadas
@@ -384,8 +331,6 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
     diceValue = usedDice;
 
     if (!action) {
-        // ... (lógica de 'não há jogadas' sem alteração) ...
-        // ... (mas envolvemos a chamada recursiva num setTimeout) ...
         if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
             showMessage("Azuis não têm jogadas válidas. A passar a vez ao jogador.", 'info');
             playerTurn = 'red';
@@ -399,7 +344,6 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
             diceValue = 0;
             resetDiceUI();
             updateTurnIndicator();
-            // ADAPTADO: Delay de 2 segundos
             setTimeout(() => {
                 handleAITurn_MonteCarloRandom(simulationsPerMove, 0); // IA joga de novo
             }, 1500);
@@ -407,7 +351,6 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
         }
     }
 
-    // action: {row, col, targetRow, targetCol, setTopColumn}
     const sq = document.querySelector(`.square[data-row='${action.row}'][data-col='${action.col}']`);
     if (!sq) {
         showMessage("Erro: casa da peça do computador não encontrada no DOM.", 'error');
@@ -419,36 +362,27 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
         return;
     }
 
-    // ADAPTADO: Bug da escolha UP/DOWN
-    // Removemos esta linha. A escolha será passada para o move()
-    // if (action.setTopColumn) { pieceEl.dataset.top_column = 'true'; }
-
-    // ADAPTADO: Destaque visual
     sq.classList.add('highlight-start');
 
-    // ADAPTADO: Passa a escolha da IA ('up' ou 'down') para a função move()
     const aiChoice = action.setTopColumn ? 'up' : 'down';
 
-    // chama a tua função move()
     const result = await move(action.row, action.col, diceValue, true, pieceEl, sq, aiChoice);
 
-    // ADAPTADO: Destaque visual da casa final
     const sqEnd = document.querySelector(`.square[data-row='${action.targetRow}'][data-col='${action.targetCol}']`);
     if (result === 'success' || result === 'success_win') {
         if (sqEnd) sqEnd.classList.add('highlight-start');
     }
 
-    // ADAPTADO: Pequena pausa para ver o destaque
-    await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5s pausa
+    await new Promise(resolve => setTimeout(resolve, 1500)); 
 
-    // ADAPTADO: Lógica de Fim de Jogo
+    // Lógica de Fim de Jogo
     if (result === 'success_win') {
         // A função move() já chamou o menu de fim de jogo.
         console.log("Computador venceu o jogo!");
         return;
     }
 
-    // após mover, atualiza turno e UI conforme as regras
+    // após mover, atualiza turno e UI 
     if (result === 'success') {
         if (diceValue !== 1 && diceValue !== 4 && diceValue !== 6) {
             playerTurn = 'red';
@@ -460,9 +394,8 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
             diceValue = 0;
             resetDiceUI();
             updateTurnIndicator();
-            // ADAPTADO: Delay de 2 segundos
             setTimeout(() => {
-                handleAITurn_MonteCarloRandom(simulationsPerMove, 0); // IA joga de novo
+                handleAITurn_MonteCarloRandom(simulationsPerMove, 0); 
             }, 2000);
         }
     } else if (result === 'reroll_only') {
@@ -470,12 +403,10 @@ async function handleAITurn_MonteCarloRandom(simulationsPerMove = 30, diceValue)
         diceValue = 0;
         resetDiceUI();
         updateTurnIndicator();
-        // ADAPTADO: Delay de 2 segundos
         setTimeout(() => {
             handleAITurn_MonteCarloRandom(simulationsPerMove, 0);
         }, 2000);
     } else {
-        // fail
         playerTurn = 'red';
         resetDiceUI();
         showMessage("Computador não pôde mover e passou a vez.", 'info');
