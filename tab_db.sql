@@ -65,6 +65,23 @@ BEGIN
 END//
 DELIMITER ;
 
+CREATE TABLE IF NOT EXISTS `players` (
+  `player_id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  PRIMARY KEY (`player_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+DELETE FROM `players`;
+INSERT INTO `players` (`player_id`, `username`, `password`) VALUES
+	(1, 'test1', 'a'),
+	(2, 'test2', 'a'),
+	(3, 'test3', 'a'),
+	(4, 'filipe', '$2b$10$pLEiFUBZ5n4x7bAbbNdELOmHNaBRaNZH/29xbOYyk2YrJIe7AY2Va'),
+	(5, 'abc', '$2b$10$ajlQ/oYAGmqtCdAu2gllaegNvyptAyH4JPJ/t7THJWyWNzNCg33aq'),
+	(6, 'abc', '$2b$10$JWyIlNx1/0kYzoNv0SVwuO5KTL/REsVjKy3X1fxDQa3d8lgCjRL0C'),
+	(7, 'atl', '$2b$10$/hgLBfgdqMVoOabtpEsf8.g3cvXfUniTPPlGArM9drfbT4SC4CO3G');
+
 CREATE TABLE IF NOT EXISTS `matches` (
   `match_id` int(11) NOT NULL AUTO_INCREMENT,
   `player1_id` int(11) NOT NULL,
@@ -93,22 +110,6 @@ INSERT INTO `matches` (`match_id`, `player1_id`, `player2_id`, `winner`) VALUES
 	(12, 4, 3, 4),
 	(13, 4, 3, 4);
 
-CREATE TABLE IF NOT EXISTS `players` (
-  `player_id` int(11) NOT NULL AUTO_INCREMENT,
-  `username` varchar(255) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  PRIMARY KEY (`player_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-DELETE FROM `players`;
-INSERT INTO `players` (`player_id`, `username`, `password`) VALUES
-	(1, 'test1', 'a'),
-	(2, 'test2', 'a'),
-	(3, 'test3', 'a'),
-	(4, 'filipe', '$2b$10$pLEiFUBZ5n4x7bAbbNdELOmHNaBRaNZH/29xbOYyk2YrJIe7AY2Va'),
-	(5, 'abc', '$2b$10$ajlQ/oYAGmqtCdAu2gllaegNvyptAyH4JPJ/t7THJWyWNzNCg33aq'),
-	(6, 'abc', '$2b$10$JWyIlNx1/0kYzoNv0SVwuO5KTL/REsVjKy3X1fxDQa3d8lgCjRL0C'),
-	(7, 'atl', '$2b$10$/hgLBfgdqMVoOabtpEsf8.g3cvXfUniTPPlGArM9drfbT4SC4CO3G');
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
