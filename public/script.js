@@ -342,7 +342,6 @@ const turnIndicator = document.getElementById('turn-indicator');
 const turnPlayerDisplay = document.getElementById('turn-player-display');
 const diceLogList = document.getElementById('dice-log-list');
 
-const maxPieces = 12;
 let selectedPiece = null;
 let diceValue = 0;
 let playerTurn = 'red';
