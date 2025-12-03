@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Jogo Tâb</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="loginPage" class="login-page">
+    <header class="main-header">
+        <h1 class="game-title" style="cursor: pointer;" onclick="location.reload()">JOGO TÂB</h1>
+    </header>
+
+    <nav class="main-nav">
+        <button id="btnInstrucoes" class="nav-btn">INSTRUÇÕES</button>
+        <button id="btnClassificacoes" class="nav-btn">CLASSIFICAÇÕES</button>
+    </nav>
+
+    <div id="overlay" class="overlay"></div>
+
+    <div id="instrucoes" class="instrucoes-ocultas">
+        <h2>Como Jogar</h2>
+        <ul>
+            <li><strong>Você é as PEÇAS AZUIS (em baixo).</strong></li>
+            <li><strong>Lançar o dado:</strong> Clique no painel "Dado de Paus".</li>
+            <li><strong>Primeiro movimento:</strong> Só move 1 casa (requer um 1).</li>
+        </ul>
+        <h2>Regras de Movimento</h2>
+        <ul>
+            <li><strong>Azuis:</strong> Movem-se da linha 3 para a 1. Na linha 1, decidem se atacam a linha 0 (Inimigo) ou voltam para a 2.</li>
+            <li><strong>Vermelhos (PC):</strong> Movem-se da linha 0 para a 2. Na linha 2, decidem se atacam a linha 3 (Sua casa) ou voltam para a 1.</li>
+            <li><strong>Restrição:</strong> Só pode entrar na linha inicial do adversário 1 vez.</li>
+            <li><strong>Combate:</strong> Captura peça adversária se aterrar na mesma casa.</li>
+        </ul>
+        <button id="btnFecharInstrucoes">Fechar</button>
+    </div>
+
+    <div id="classificacoes" class="classificacoes-ocultas">
+        <h2>Classificações</h2>
+        <table>
+            <thead><tr><th>Pos</th><th>Jogador</th><th>V</th><th>D</th></tr></thead>
+            <tbody></tbody>
+        </table>
+        <button id="btnFecharClassificacoes">Fechar</button>
+    </div>
+
+    <div class="login-container">
+        <div id="loginMessage" class="message-box oculto"></div>
+
+        <form id="loginForm">
+            <h2>LOGIN</h2>
+            <label for="username">USER</label>
+            <input type="text" id="username" placeholder="Insira o seu utilizador" required>
+            <label for="password">SENHA</label>
+            <input type="password" id="password" placeholder="Insira a sua senha" required>
+            <button type="submit" class="btn-enviar">ENTRAR</button>
+            <p>Não tem conta? <a href="#" id="showRegister">Registe-se aqui</a></p>
+        </form>
+
+        <form id="registerForm" class="oculto">
+            <h2>REGISTO</h2>
+            <label for="regUsername">NOVO USER</label>
+            <input type="text" id="regUsername" placeholder="Escolha um utilizador" required>
+            <label for="regPassword">NOVA SENHA</label>
+            <input type="password" id="regPassword" placeholder="Escolha uma senha" required>
+            <button type="submit" class="btn-enviar">CRIAR CONTA</button>
+            <p>Já tem conta? <a href="#" id="showLogin">Voltar ao login</a></p>
+        </form>
+    </div>
+</div>
+
+<div id="configPanel" class="config-panel oculto">
+    <div class="config-container">
+        <h2>Configurações</h2>
+        <div class="config-option">
+            <label for="boardSize">Tamanho do Tabuleiro:</label>
+            <select id="boardSize">
+                <option value="7">7 casas</option>
+                <option value="9" selected>9 casas</option>
+                <option value="11">11 casas</option>
+            </select>
+        </div>
+        <div class="config-option">
+            <label for="gameMode">Modo de Jogo:</label>
+            <select id="gameMode">
+                <option value="pvc" selected>Jogador vs Computador</option>
+            </select>
+        </div>
+        <div class="config-option">
+            <label for="firstPlayer">Primeiro a Jogar:</label>
+            <select id="firstPlayer">
+                <option value="blue" selected>Azul (Você)</option>
+                <option value="red">Vermelho (PC)</option>
+            </select>
+        </div>
+        <div class="config-option" id="aiLevelOption">
+            <label for="aiLevel">Nível da IA:</label>
+            <select id="aiLevel">
+                <option value="easy">Fácil</option>
+                <option value="medium" selected>Médio</option>
+                <option value="hard">Difícil</option>
+            </select>
+        </div>
+        <button id="btnIniciarJogo" class="btn-start-game">Iniciar Jogo</button>
+        <button id="btnVoltarMenu" class="btn-voltar-menu">Voltar ao Menu</button>
+    </div>
+</div>
+
+<div id="gamePage" class="game-page oculto">
+
+    <button id="btnInstrucoesJogo" class="btn-instrucoes-jogo">Instruções</button>
+    <button id="btnClassificacoesJogo" class="btn-classificacoes-jogo">Classificações</button>
+
+    <div id="instrucoesJogo" class="instrucoes-ocultas"></div>
+    <div id="classificacoesJogo" class="classificacoes-ocultas"></div>
+
+    <h1>Jogo Tâb</h1>
+    <div id="message-bar" class="info">Bem-vindo! Clique no dado.</div>
+
+    <div class="game-container">
+        <div id="board"></div>
+        <div id="dice-panel">
+            <div id="turn-indicator">
+                <span>Vez do Jogador</span>
+                <strong id="turn-player-display">Azul (Você)</strong>
+            </div>
+            <h3>Dado de Paus</h3>
+            <div id="dice-sticks">
+                <div class="stick"></div><div class="stick"></div><div class="stick"></div><div class="stick"></div>
+            </div>
+            <div id="dice-result">
+                <span>Valor:</span>
+                <strong id="dice-value-display">-</strong>
+            </div>
+            <p id="dice-message">Clique para lançar</p>
+            <div id="dice-log-container">
+                <h4>Histórico</h4>
+                <ol id="dice-log-list"></ol>
+            </div>
+        </div>
+    </div>
+
+    <div id="moveSelector" class="oculto">
+        <p>Chegou ao fim da linha!</p>
+        <p>Escolha a rota:</p>
+        <button id='move_attack' class="btn-move">Invadir Base Inimiga (Linha 0)</button>
+        <button id='move_retreat' class="btn-move">Recuar (Linha 2)</button>
+    </div>
+
+    <button id="btnDesistir" class="btn-desistir">Desistir</button>
+
+    <div id="endGameMenu" class="end-game-menu oculto">
+        <div class="end-game-container">
+            <h2 id="endGameMessage">Fim!</h2>
+            <div class="end-game-buttons">
+                <button id="btnVoltarInicio" class="btn-end-game">Voltar à Página Inicial</button>
+                <button id="btnJogarNovamente" class="btn-end-game">Jogar Novamente</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="MonteCarlo.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
