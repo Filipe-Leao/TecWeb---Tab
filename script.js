@@ -10,6 +10,8 @@ let diceValue = 0;
 let pieces = [];
 let resolveAskDirection = null;
 
+const server = "http://twserver.alunos.dcc.fc.up.pt:8008";
+
 // --- 2. SELETORES DO DOM ---
 const loginPage = document.getElementById('loginPage');
 const configPanel = document.getElementById('configPanel');
@@ -77,19 +79,40 @@ function showLoginMessage(text, isError = true) {
 if(showRegisterLink) showRegisterLink.addEventListener("click", (e) => { e.preventDefault(); loginForm.classList.add("oculto"); registerForm.classList.remove("oculto"); });
 if(showLoginLink) showLoginLink.addEventListener("click", (e) => { e.preventDefault(); registerForm.classList.add("oculto"); loginForm.classList.remove("oculto"); });
 
-if(loginForm) loginForm.addEventListener("submit", (e) => {
+if(loginForm) loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const u = usernameInput.value.trim();
     const p = passwordInput.value.trim();
     const players = JSON.parse(localStorage.getItem('tab_players')) || [];
-    const user = players.find(x => x.username === u && x.password === p);
-    if (user) {
-        sessionStorage.setItem('currentUser', u);
+
+    try {
+        let response = await fetch(`${server}/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nick: u, password: p })
+        });
+
+        const data = await response.json();
+        
+        if (data.error) {
+            showLoginMessage(data.error, true);
+            return;
+        }
+
+        // Login bem-sucedido no servidor
+        sessionStorage.setItem('currentUserNick', u);
+        sessionStorage.setItem('currentUserPassword', p);
         loginPage.classList.add("oculto");
         configPanel.classList.remove("oculto");
-    } else showLoginMessage("Dados incorretos", true);
+        
+    } catch (error) {
+        showLoginMessage("Erro de conexão com o servidor", true);
+    }
 });
 
+// O registo é feito pelo login automaticamente pelo servidor
+
+/* 
 if(registerForm) registerForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const u = regUsernameInput.value.trim();
@@ -106,6 +129,7 @@ if(registerForm) registerForm.addEventListener("submit", (e) => {
     loginForm.classList.remove("oculto");
     showLoginMessage("Registo OK! Faça Login", false);
 });
+ */
 
 // --- 4. INICIAR JOGO ---
 if(gameModeSelect) {
@@ -117,8 +141,15 @@ if(gameModeSelect) {
 
 if(btnIniciarJogo) btnIniciarJogo.addEventListener('click', () => {
     window.BOARD_SIZE = parseInt(document.getElementById('boardSize').value);
+    mode = document.getElementById('gameMode').value;
     AI_DIFFICULTY = document.getElementById('aiLevel').value;
     window.playerTurn = document.getElementById('firstPlayer').value;
+
+    if (mode === 'pvp') {
+        console.log("Iniciando jogo Jogador vs Jogador...");
+        player_vs_player_setup();
+        return;
+    }
 
     switch(AI_DIFFICULTY) {
         case 'easy': AI_SIMULATIONS = 100; break;
@@ -154,7 +185,7 @@ if(btnIniciarJogo) btnIniciarJogo.addEventListener('click', () => {
 if(btnVoltarMenu) btnVoltarMenu.addEventListener('click', () => {
     configPanel.classList.add('oculto');
     loginPage.classList.remove('oculto');
-    sessionStorage.removeItem('currentUser');
+    sessionStorage.removeItem('currentUserNick');
     loginForm.reset();
 });
 
@@ -168,7 +199,7 @@ function updateTurnIndicator() {
     if (window.playerTurn === 'blue') {
         // ALTERAÇÃO AQUI:
         // Se quiser usar o nome de utilizador:
-        // const user = sessionStorage.getItem('currentUser') || 'Eu';
+        // const user = sessionStorage.getItem('currentUserNick') || 'Eu';
         // turnPlayerDisplay.textContent = user + " (Azul)";
 
         // Se quiser forçar sempre "Eu (Azul)":
@@ -222,6 +253,285 @@ function createBoard() {
         }
     }
     updateTurnIndicator();
+}
+
+async function player_vs_player_setup() {
+    async function joinGame(group = 35, nick = Null, password = Null, size = 9) {
+        // Lógica para o jogador juntar-se ao jogo
+        let response = await fetch(`${server}/join`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ group: group, nick: nick, password: password, size: size })
+        });
+
+        const data = await response.json();
+        if (data.error) {
+            showMessage(`Erro ao juntar-se ao jogo: ${data.error}`, 'error');
+            return;
+        }
+        // Configurar o jogo com os dados recebidos
+        configPanel.classList.add('oculto');
+        gamePage.classList.remove('oculto');
+        createBoard();
+        clearLog();
+        window.playerTurn = 'blue'; // ou 'red', dependendo do que o servidor indicar
+        updateTurnIndicator();
+        showMessage("Jogo iniciado! É a sua vez.", 'info');
+        console.log("Jogo PvP iniciado:", data.game);
+        sessionStorage.setItem('currentGameId', data.game);
+        return data.game;
+    }
+    async function updateGame(gameId, nick) {
+        let response = await fetch(`${server}/update`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ game: gameId, nick: nick })
+        });
+        const data = await response.json();
+        if (data.error) {
+            showMessage(`Erro ao atualizar o jogo: ${data.error}`, 'error');
+            return;
+        }
+        // Atualize o estado do jogo com os dados recebidos
+    }
+    async function waitForOtherPlayer(gameId, nick) {
+        showMessage("Aguardando outro jogador...", 'info');
+        console.log("=== INICIANDO ESPERA POR OUTRO JOGADOR ===");
+        console.log("Game ID:", gameId);
+        console.log("Nick:", nick);
+        
+        return new Promise((resolve, reject) => {
+            const eventSource = new EventSource(`${server}/update?nick=${encodeURIComponent(nick)}&game=${encodeURIComponent(gameId)}`);
+            
+            eventSource.onmessage = (event) => {
+                try {
+                    console.log("Mensagem SSE recebida:", event.data);
+                    const data = JSON.parse(event.data);
+                    console.log("Dados parseados:", data);
+                    
+                    if (data.error) {
+                        showMessage(`Erro: ${data.error}`, 'error');
+                        console.error("Erro do servidor:", data.error);
+                        eventSource.close();
+                        reject(data.error);
+                        return;
+                    }
+                    
+                    // Verificar se o jogo tem 2 jogadores (board/pieces definido E players com 2 entradas)
+                    const hasBoard = data.board || data.pieces;
+                    const hasTwoPlayers = data.players && Object.keys(data.players).length === 2;
+                    
+                    if (hasBoard && hasTwoPlayers) {
+                        showMessage("Outro jogador entrou! Começando o jogo...", 'success');
+                        console.log("=== JOGO PRONTO PARA INICIAR ===");
+                        console.log("Dados do jogo:", data);
+                        eventSource.close();
+                        resolve(data);
+                    } else {
+                        console.log("Aguardando segundo jogador... Dados atuais:", data);
+                        console.log("Jogadores atuais:", Object.keys(data.players || {}).length);
+                    }
+                } catch (error) {
+                    console.error("Erro ao processar mensagem SSE:", error);
+                    eventSource.close();
+                    reject(error);
+                }
+            };
+            
+            eventSource.onerror = (error) => {
+                console.error("Erro no EventSource:", error);
+                showMessage("Erro de conexão ao aguardar jogador", 'error');
+                eventSource.close();
+                reject(error);
+            };
+            
+            // Timeout de segurança (5 minutos)
+            setTimeout(() => {
+                if (eventSource.readyState !== EventSource.CLOSED) {
+                    console.log("Timeout ao aguardar jogador");
+                    showMessage("Timeout ao aguardar jogador", 'error');
+                    eventSource.close();
+                    reject(new Error("Timeout"));
+                }
+            }, 300000); // 5 minutos = 300000ms
+        });
+    }
+
+    async function playGame(gameId, nick = null, password = null, size = 9) {
+        console.log("=== INICIANDO PLAYGAME ===");
+        console.log("Game ID:", gameId);
+        console.log("Nick:", nick);
+        
+        try {
+            const gameData = await waitForOtherPlayer(gameId, nick);
+            console.log("=== JOGO INICIADO ===");
+            console.log("Dados do jogo:", gameData);
+            
+            // Processar dados do servidor
+            if (gameData) {
+                console.log("Pieces:", gameData.pieces);
+                console.log("Turno:", gameData.turn);
+                console.log("Jogadores:", gameData.players);
+                console.log("Step:", gameData.step);
+                
+                // Determinar qual é a minha cor
+                const myColor = gameData.players[nick]; // "Blue" ou "Red"
+                console.log("Minha cor:", myColor);
+                
+                // Atualizar o tabuleiro com os dados do servidor
+                updateBoardFromServerData(gameData);
+                
+                // Configurar de quem é o turno
+                const isMyTurn = gameData.turn === nick;
+                window.playerTurn = myColor === "Blue" ? 'blue' : 'red';
+                updateTurnIndicator();
+                
+                if (isMyTurn) {
+                    showMessage("É a sua vez! Lance o dado.", 'info');
+                    resetDiceUI();
+                } else {
+                    showMessage("Aguardando jogada do adversário...", 'info');
+                }
+                
+                // Iniciar loop de atualizações do jogo
+                startGameLoop(gameId, nick, myColor);
+            }
+        } catch (error) {
+            console.error("Erro ao iniciar jogo:", error);
+            showMessage("Erro ao iniciar jogo PvP", 'error');
+        }
+    }
+
+    // Nova função para atualizar o tabuleiro com dados do servidor
+    function updateBoardFromServerData(gameData) {
+        console.log("Atualizando tabuleiro com dados do servidor");
+        
+        // O servidor retorna um array de 36 peças (9x4 tabuleiro)
+        // pieces[i] pode ser: { color: "Blue"/"Red", inMotion: bool, reachedLastRow: bool } ou null
+        
+        const pieces = gameData.pieces || [];
+        const squares = document.querySelectorAll('.square');
+        
+        // Limpar tabuleiro atual
+        squares.forEach(sq => {
+            sq.innerHTML = '';
+            const row = parseInt(sq.dataset.row);
+            const col = parseInt(sq.dataset.col);
+            window.matrix[row][col] = 0;
+        });
+        
+        // Recriar peças baseado nos dados do servidor
+        pieces.forEach((piece, index) => {
+            if (!piece) return;
+            
+            const row = Math.floor(index / window.BOARD_SIZE);
+            const col = index % window.BOARD_SIZE;
+            const square = squares[index];
+            
+            if (!square) return;
+            
+            const pieceDiv = document.createElement('div');
+            pieceDiv.className = piece.color === "Blue" ? 'piece_blue' : 'piece_red';
+            pieceDiv.setAttribute('data-first-move', piece.inMotion ? 'false' : 'true');
+            pieceDiv.setAttribute('data-visited-enemy', piece.reachedLastRow ? 'true' : 'false');
+            
+            square.appendChild(pieceDiv);
+            window.matrix[row][col] = piece.color === "Blue" ? 2 : 1;
+        });
+        
+        console.log("Tabuleiro atualizado");
+    }
+
+    // Nova função para manter o loop de atualizações
+    function startGameLoop(gameId, nick, myColor) {
+        console.log("Iniciando loop de atualizações do jogo");
+        
+        const eventSource = new EventSource(`${server}/update?nick=${encodeURIComponent(nick)}&game=${encodeURIComponent(gameId)}`);
+        
+        eventSource.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log("Atualização do jogo:", data);
+                
+                // Verificar se há vencedor
+                if (data.winner) {
+                    console.log("Jogo terminado! Vencedor:", data.winner);
+                    const iWon = data.winner === nick;
+                    showEndGameMenu(iWon ? 'blue' : 'red');
+                    eventSource.close();
+                    window.currentEventSource = null;
+                    return;
+                }
+                
+                // Atualizar estado do jogo
+                if (data.pieces) {
+                    updateBoardFromServerData(data);
+                }
+                
+                // Verificar de quem é o turno
+                if (data.turn) {
+                    console.log("Turno de:", data.turn);
+                    const isMyTurn = data.turn === nick;
+                    
+                    if (isMyTurn) {
+                        showMessage("É a sua vez! Lance o dado.", 'info');
+                        window.playerTurn = myColor === "Blue" ? 'blue' : 'red';
+                        resetDiceUI();
+                    } else {
+                        showMessage("Aguardando jogada do adversário...", 'info');
+                        window.playerTurn = myColor === "Blue" ? 'red' : 'blue';
+                        updateTurnIndicator();
+                    }
+                }
+                
+            } catch (error) {
+                console.error("Erro ao processar atualização:", error);
+            }
+        };
+        
+        eventSource.onerror = (error) => {
+            console.error("Erro no loop do jogo:", error);
+            eventSource.close();
+            window.currentEventSource = null;
+        };
+        
+        // Armazenar eventSource para poder fechar depois
+        window.currentEventSource = eventSource;
+    }
+
+/* 
+    async function playGame(gameId, nick = Null, password = Null, size = 9) {
+        // Lógica para jogar o jogo com o ID fornecido
+        const gameData = await waitForOtherPlayer(gameId, nick);
+        console.log("Jogando jogo com ID:", gameId);
+        // Aqui você pode implementar a lógica para interagir com o servidor e atualizar o estado do jogo
+
+    } */
+
+    if(btnDesistir) btnDesistir.addEventListener('click', () => {
+        if (window.currentEventSource) {
+            window.currentEventSource.close();
+            window.currentEventSource = null;
+        }
+        showEndGameMenu('red');
+    });
+
+    if(btnVoltarInicio) btnVoltarInicio.addEventListener('click', () => {
+        if (window.currentEventSource) {
+            window.currentEventSource.close();
+            window.currentEventSource = null;
+        }
+        location.reload();
+    });
+
+    try {
+        console.log("Juntando-se ao jogo PvP...");
+        game = await joinGame(35, sessionStorage.getItem('currentUserNick'), sessionStorage.getItem('currentUserPassword'), window.BOARD_SIZE);
+        playGame(game, sessionStorage.getItem('currentUserNick'), sessionStorage.getItem('currentUserPassword'), window.BOARD_SIZE);
+
+    } catch (error) {
+        showMessage("Erro ao iniciar jogo PvP.", 'error');
+    }
 }
 
 function rollDice() {
@@ -568,7 +878,7 @@ function carregarClassificacoes() {
 }
 
 function updateStats(winner) {
-    const currentUser = sessionStorage.getItem('currentUser');
+    const currentUser = sessionStorage.getItem('currentUserNick');
     if (!currentUser) return;
     const lb = JSON.parse(localStorage.getItem('tab_leaderboard')) || {};
     if (!lb[currentUser]) lb[currentUser] = { victories: 0, defeats: 0 };
