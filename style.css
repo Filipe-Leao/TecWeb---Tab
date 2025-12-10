@@ -479,6 +479,43 @@ body {
                 inset 0 -2px 5px rgba(0,0,0,0.3);
 }
 
+/* Peças que ainda não foram movidas (first_move) */
+.piece_red[data-first-move="true"],
+.piece_blue[data-first-move="true"] {
+    border-width: 3px !important;
+    border-style: solid !important;
+}
+
+.piece_red[data-first-move="true"] {
+    border-color: #d4af37 !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3),
+                inset 0 -2px 5px rgba(0,0,0,0.2),
+                0 0 12px rgba(212, 175, 55, 0.6) !important;
+}
+
+.piece_blue[data-first-move="true"] {
+    border-color: #d4af37 !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3),
+                inset 0 -2px 5px rgba(0,0,0,0.2),
+                0 0 12px rgba(212, 175, 55, 0.6) !important;
+}
+
+/* Adicionar um pequeno indicador discreto */
+.piece_red[data-first-move="true"]::after,
+.piece_blue[data-first-move="true"]::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    background: #d4af37;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.3);
+    pointer-events: none;
+    z-index: 10;
+}
+
 #moveSelector {
     gap: 10px;
     display: flex; /* Para alinhar */
@@ -530,14 +567,20 @@ body {
 }
 
 /* Estilos de Destaque de Jogada */
-.square.highlight-start {
-    background: #a5d6a7; /* Verde claro */
-    border-color: #388e3c;
+/* Para peças AZUIS - tom de azul */
+.square.highlight-blue {
+    background: #90caf9 !important; /* Azul claro */
+    border-color: #1976d2 !important;
+    box-shadow: 0 0 15px rgba(25, 118, 210, 0.7);
 }
-.square.highlight-end {
-    background: #ef9a9a; /* Vermelho claro */
-    border-color: #d32f2f;
+
+/* Para peças VERMELHAS - tom de vermelho */
+.square.highlight-red {
+    background: #ef9a9a !important; /* Rosa/Vermelho claro */
+    border-color: #d32f2f !important;
+    box-shadow: 0 0 15px rgba(211, 47, 47, 0.7);
 }
+
 /* O .selected já existe, mas vamos garantir que se sobrepõe */
 .square.selected {
     background: #fff59d; /* Amarelo */
@@ -685,6 +728,14 @@ body {
     padding: 20px;
 }
 
+/* Container para os botões do topo */
+.game-page-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
 .game-page h1 {
     font-size: 4rem;
     color: #8b5a5a;
@@ -694,17 +745,14 @@ body {
                  -1px 1px 0px #5a3a3a,
                  1px 1px 0px #5a3a3a;
     font-weight: bold;
-    margin-top: 10px;
-    margin-bottom: 20px;
+    margin-top: 5px;
+    margin-bottom: 10px;
     letter-spacing: 3px;
 }
 
 /* Botão de instruções na página do jogo */
+/* Botão de instruções na página do jogo */
 .btn-instrucoes-jogo {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    z-index: 1001;
     padding: 12px 30px;
     width: 220px;
     background: #8b5a5a;
@@ -726,10 +774,6 @@ body {
 
 /* Botão de classificações na página do jogo */
 .btn-classificacoes-jogo {
-    position: fixed;
-    top: 60px; /* abaixo do botão de instruções */
-    left: 10px;
-    z-index: 1001;
     padding: 12px 30px;
     width: 220px;
     background: #8b5a5a;
@@ -741,7 +785,7 @@ body {
     font-size: 1.1rem;
     font-weight: bold;
     transition: all 0.3s;
-    text-align: center; /* centraliza o texto */
+    text-align: center;
 }
 
 .btn-classificacoes-jogo:hover {
@@ -898,9 +942,6 @@ body {
 
 /* Botão de Desistir */
 .btn-desistir {
-    position: fixed;
-    top: 110px; /* abaixo do botão de classificações */
-    left: 10px;
     background: #8b5a5a;
     color: #f5e8e0;
     border: 2px solid #5a3a3a;
@@ -912,7 +953,6 @@ body {
     font-size: 1.1rem;
     font-weight: bold;
     transition: all 0.3s;
-    z-index: 1001;
     text-align: center;
 }
 

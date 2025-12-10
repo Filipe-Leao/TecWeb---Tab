@@ -481,10 +481,10 @@ async function handleSquareClick(e) {
     // Se clicou numa peça sua, tentamos destacar o movimento
     if (piece) {
         clearHighlights();
-        sq.classList.add('selected');
+        sq.classList.add('highlight-blue');
 
         // Mostra as opções de jogada visualmente
-        const target = await highlightMove(r, c, diceValue, piece, sq);
+        const target = await highlightMove(r, c, diceValue, piece, sq, 'blue');
 
         if (target instanceof HTMLElement) {
             // Se o utilizador clicou num quadrado de destino válido:
@@ -529,7 +529,6 @@ if(dicePanel) dicePanel.addEventListener('click', () => {
         if (window.playerTurn !== 'blue') return showMessage("Vez do PC!", 'error');
         if (diceValue !== 0) return showMessage("Já lançou.", 'error');
         rollDiceLocal();
-        addLog('blue', diceValue);
 
         if(window.legalMovesForDice) {
             const moves = window.legalMovesForDice(window.buildStateFromDOM(), 2, diceValue);
@@ -545,6 +544,7 @@ if(dicePanel) dicePanel.addEventListener('click', () => {
 });
 
 function rollDiceLocal() {
+    clearHighlights();
     let tab = 0;
     const sticks = document.querySelectorAll('#dice-sticks .stick');
     for(let i=0; i<4; i++) { if(Math.random()>=0.5) { tab++; sticks[i].className='stick claro'; } else sticks[i].className='stick escuro'; }
@@ -552,6 +552,7 @@ function rollDiceLocal() {
     diceValueDisplay.textContent = diceValue;
     diceMessage.textContent = "Selecione peça.";
     showMessage(`Dado: ${diceValue}.`);
+    addLog('blue', diceValue);
     return diceValue;
 }
 function visualizeDice(val) {
@@ -591,8 +592,8 @@ function addLog(color, val) {
 }
 function clearLog() { if(diceLogList) diceLogList.innerHTML=''; }
 function toggleModal(m, s) { if(s) { m.classList.add('instrucoes-visiveis'); overlay.classList.add('ativo'); } else { m.classList.remove('instrucoes-visiveis', 'classificacoes-visiveis'); overlay.classList.remove('ativo'); } }
-function clearHighlights() { document.querySelectorAll('.square').forEach(s => s.classList.remove('selected','highlight-start','highlight-end')); }
-function highlight(sq) { clearHighlights(); sq.classList.add('highlight-end'); }
+function clearHighlights() { document.querySelectorAll('.square').forEach(s => s.classList.remove('selected','highlight-blue','highlight-red')); }
+function highlight(sq, color) { sq.classList.add(`highlight-${color}`); }
 
 if(btnInstrucoes) btnInstrucoes.addEventListener('click', ()=>toggleModal(instrucoesModal, true));
 if(btnFecharInstrucoes) btnFecharInstrucoes.addEventListener('click', ()=>toggleModal(instrucoesModal, false));
@@ -645,6 +646,11 @@ async function move(row, col, diceValue, pieceElement, originalSq, aiMoveChoice=
     if(window.matrix[r][c] === pVal) { showMessage("Casa ocupada por peça sua.", 'error'); if(first_move_used) pieceElement.setAttribute('data-first-move', 'true'); return 'fail'; }
     const targetSq = document.querySelector(`.square[data-row='${r}'][data-col='${c}']`);
     if(!targetSq) return 'fail';
+    
+    // Adicionar highlight de destino baseado na cor da peça
+    const isBlue = pieceElement.classList.contains('piece_blue');
+    targetSq.classList.add(isBlue ? 'highlight-blue' : 'highlight-red');
+    
     if(window.matrix[r][c] !== 0) { showMessage("Peça capturada!", 'info'); targetSq.innerHTML = ''; }
     targetSq.appendChild(pieceElement);
     window.matrix[r][c] = pVal;
@@ -653,7 +659,7 @@ async function move(row, col, diceValue, pieceElement, originalSq, aiMoveChoice=
     return 'success';
 }
 
-async function highlightMove(row, col, diceValue, piece, sq) {
+async function highlightMove(row, col, diceValue, piece, sq, color='blue') {
     let r=parseInt(row), c=parseInt(col);
     if(piece.getAttribute('data-first-move') === 'true') { if(diceValue!==1) { showMessage("Requer 1 (Tâb).", 'error'); return (diceValue===4||diceValue===6)?'reroll_only':'fail'; } }
     for(let k=0; k<diceValue; k++) {
@@ -674,7 +680,7 @@ async function highlightMove(row, col, diceValue, piece, sq) {
     const tSq = document.querySelector(`.square[data-row='${r}'][data-col='${c}']`);
     if(!tSq) return 'fail';
     if(window.matrix[r][c] === window.matrix[row][col]) { showMessage("Bloqueado.",'error'); return 'fail'; }
-    highlight(tSq);
+    highlight(tSq, color);
     const ok = await waitForClickOnSquare(tSq, sq);
     clearHighlights();
     return ok ? tSq : 'cancel';

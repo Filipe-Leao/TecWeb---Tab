@@ -150,7 +150,7 @@ async function handleAITurn(val) {
     const sq = document.querySelector(`.square[data-row='${move.row}'][data-col='${move.col}']`);
     const p = sq.querySelector('.piece_red');
 
-    sq.classList.add('highlight-start');
+    sq.classList.add('highlight-red');
 
     if (typeof window.move === 'function') {
         await window.move(move.row, move.col, val, p, sq, move.choice);
