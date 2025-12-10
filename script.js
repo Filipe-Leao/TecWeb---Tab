@@ -1,16 +1,24 @@
-// --- 1. VARIÁVEIS GLOBAIS (Expostas ao Window) ---
+// --- 1. VARIÁVEIS GLOBAIS ---
 window.BOARD_SIZE = 9;
 window.NUM_ROWS = 4;
 window.playerTurn = 'blue';
 window.matrix = null;
+window.isPvP = false;
 
+// Configurações do Servidor
+const SERVER_URL = "http://twserver.alunos.dcc.fc.up.pt:8008";
+const GROUP_ID = 35;
+
+// Estado do Utilizador e Jogo
+let userNick = null;
+let userPass = null;
+let gameId = null;
+let eventSource = null;
+let myServerColor = null;
+
+// Configurações Locais
 let AI_DIFFICULTY = 'medium';
-let AI_SIMULATIONS = 300;
 let diceValue = 0;
-let pieces = [];
-let resolveAskDirection = null;
-
-const server = "http://twserver.alunos.dcc.fc.up.pt:8008";
 
 // --- 2. SELETORES DO DOM ---
 const loginPage = document.getElementById('loginPage');
@@ -31,24 +39,20 @@ const btnVoltarMenu = document.getElementById('btnVoltarMenu');
 const aiLevelOption = document.getElementById('aiLevelOption');
 const gameModeSelect = document.getElementById('gameMode');
 const boardElement = document.getElementById('board');
-const moveSelector = document.getElementById('moveSelector');
-const moveAttackBtn = document.getElementById('move_attack');
-const moveRetreatBtn = document.getElementById('move_retreat');
 const dicePanel = document.getElementById('dice-panel');
-const diceSticks = document.querySelectorAll('#dice-sticks .stick');
 const diceValueDisplay = document.getElementById('dice-value-display');
 const diceMessage = document.getElementById('dice-message');
 const messageBar = document.getElementById('message-bar');
 const turnIndicator = document.getElementById('turn-indicator');
 const turnPlayerDisplay = document.getElementById('turn-player-display');
-const diceLogList = document.getElementById('dice-log-list');
 const btnDesistir = document.getElementById('btnDesistir');
 const endGameMenu = document.getElementById('endGameMenu');
 const endGameMessage = document.getElementById('endGameMessage');
 const btnVoltarInicio = document.getElementById('btnVoltarInicio');
 const btnJogarNovamente = document.getElementById('btnJogarNovamente');
+const diceLogList = document.getElementById('dice-log-list');
 
-// Botões Menu Extra
+// Botões Extras
 const btnInstrucoes = document.getElementById('btnInstrucoes');
 const btnClassificacoes = document.getElementById('btnClassificacoes');
 const btnInstrucoesJogo = document.getElementById('btnInstrucoesJogo');
@@ -63,11 +67,30 @@ const btnFecharInstrucoesJogo = document.getElementById('btnFecharInstrucoesJogo
 const btnFecharClassificacoesJogo = document.getElementById('btnFecharClassificacoesJogo');
 
 
-// Instanciação BD Local
-if (!localStorage.getItem('tab_players')) localStorage.setItem('tab_players', JSON.stringify([]));
-if (!localStorage.getItem('tab_leaderboard')) localStorage.setItem('tab_leaderboard', JSON.stringify({}));
+// --- 3. API ---
+async function apiRequest(endpoint, data) {
+    const url = `${SERVER_URL}/${endpoint}`;
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if (result.error) {
+            console.warn(`API Error [${endpoint}]:`, result.error);
+            if (endpoint !== 'register') showMessage(`Erro: ${result.error}`, 'error');
+            return { error: result.error };
+        }
+        return result;
+    } catch (err) {
+        console.error("Fetch Error:", err);
+        showMessage("Falha na conexão.", 'error');
+        return null;
+    }
+}
 
-// --- 3. LÓGICA LOGIN/REGISTO ---
+// --- 4. LOGIN ---
 function showLoginMessage(text, isError = true) {
     if (!loginMessage) return;
     loginMessage.textContent = text;
@@ -79,657 +102,578 @@ function showLoginMessage(text, isError = true) {
 if(showRegisterLink) showRegisterLink.addEventListener("click", (e) => { e.preventDefault(); loginForm.classList.add("oculto"); registerForm.classList.remove("oculto"); });
 if(showLoginLink) showLoginLink.addEventListener("click", (e) => { e.preventDefault(); registerForm.classList.add("oculto"); loginForm.classList.remove("oculto"); });
 
-if(loginForm) loginForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const u = usernameInput.value.trim();
-    const p = passwordInput.value.trim();
-    const players = JSON.parse(localStorage.getItem('tab_players')) || [];
-
-    try {
-        let response = await fetch(`${server}/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nick: u, password: p })
-        });
-
-        const data = await response.json();
-        
-        if (data.error) {
-            showLoginMessage(data.error, true);
-            return;
-        }
-
-        // Login bem-sucedido no servidor
-        sessionStorage.setItem('currentUserNick', u);
-        sessionStorage.setItem('currentUserPassword', p);
+async function performAuth(nick, pass) {
+    const result = await apiRequest('register', { nick: nick, password: pass });
+    if ((result && !result.error) || (result && result.error && result.error === "User already registered")) {
+        userNick = nick;
+        userPass = pass;
+        sessionStorage.setItem('currentUserNick', nick);
+        sessionStorage.setItem('currentUserPassword', pass);
         loginPage.classList.add("oculto");
         configPanel.classList.remove("oculto");
-        
-    } catch (error) {
-        showLoginMessage("Erro de conexão com o servidor", true);
+        updateRankingTables();
+    } else {
+        showLoginMessage(result.error || "Erro ao entrar.", true);
     }
-});
-
-// O registo é feito pelo login automaticamente pelo servidor
-
-/* 
-if(registerForm) registerForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const u = regUsernameInput.value.trim();
-    const p = regPasswordInput.value.trim();
-    const players = JSON.parse(localStorage.getItem('tab_players')) || [];
-    if (players.find(x => x.username === u)) return showLoginMessage("Utilizador já existe", true);
-    players.push({ username: u, password: p });
-    localStorage.setItem('tab_players', JSON.stringify(players));
-    const lb = JSON.parse(localStorage.getItem('tab_leaderboard')) || {};
-    lb[u] = { victories: 0, defeats: 0 };
-    localStorage.setItem('tab_leaderboard', JSON.stringify(lb));
-    registerForm.reset();
-    registerForm.classList.add("oculto");
-    loginForm.classList.remove("oculto");
-    showLoginMessage("Registo OK! Faça Login", false);
-});
- */
-
-// --- 4. INICIAR JOGO ---
-if(gameModeSelect) {
-    gameModeSelect.addEventListener('change', () => {
-        if(gameModeSelect.value === 'player') aiLevelOption.style.display = 'none';
-        else aiLevelOption.style.display = 'block';
-    });
 }
 
-if(btnIniciarJogo) btnIniciarJogo.addEventListener('click', () => {
+if(loginForm) loginForm.addEventListener("submit", (e) => { e.preventDefault(); performAuth(usernameInput.value.trim(), passwordInput.value.trim()); });
+if(registerForm) registerForm.addEventListener("submit", (e) => { e.preventDefault(); performAuth(regUsernameInput.value.trim(), regPasswordInput.value.trim()); });
+
+// --- 5. CONFIGURAÇÃO ---
+function toggleAILevelVisibility() {
+    const gameModeSelect = document.getElementById('gameMode');
+    if (!gameModeSelect || !aiLevelOption) return;
+    if (gameModeSelect.value === 'pvp') aiLevelOption.style.display = 'none';
+    else aiLevelOption.style.display = 'block';
+}
+
+if(gameModeSelect) {
+    toggleAILevelVisibility();
+    gameModeSelect.addEventListener('change', toggleAILevelVisibility);
+}
+
+if(btnIniciarJogo) btnIniciarJogo.addEventListener('click', async () => {
     window.BOARD_SIZE = parseInt(document.getElementById('boardSize').value);
-    mode = document.getElementById('gameMode').value;
-    AI_DIFFICULTY = document.getElementById('aiLevel').value;
-    window.playerTurn = document.getElementById('firstPlayer').value;
-
-    if (mode === 'pvp') {
-        console.log("Iniciando jogo Jogador vs Jogador...");
-        player_vs_player_setup();
-        return;
-    }
-
-    switch(AI_DIFFICULTY) {
-        case 'easy': AI_SIMULATIONS = 100; break;
-        case 'medium': AI_SIMULATIONS = 300; break;
-        case 'hard': AI_SIMULATIONS = 1000; break;
-    }
-
+    const mode = document.getElementById('gameMode').value;
     configPanel.classList.add('oculto');
     gamePage.classList.remove('oculto');
 
     if(document.getElementById('instrucoes')) document.getElementById('instrucoesJogo').innerHTML = document.getElementById('instrucoes').innerHTML;
     if(document.getElementById('classificacoes')) document.getElementById('classificacoesJogo').innerHTML = document.getElementById('classificacoes').innerHTML;
 
-    const closeInst = document.getElementById('instrucoesJogo').querySelector('button');
-    if(closeInst) closeInst.onclick = () => toggleModal(instrucoesJogoModal, false);
-    const closeClass = document.getElementById('classificacoesJogo').querySelector('button');
-    if(closeClass) closeClass.onclick = () => toggleModal(classificacoesJogoModal, false);
-
-    createBoard();
     clearLog();
+    boardElement.classList.remove('board-rotated');
 
-    if (window.playerTurn === 'red') {
-        updateTurnIndicator();
-        showMessage("O computador (Vermelho) começa...");
-        setTimeout(() => { if(window.handleAITurn) window.handleAITurn(0); }, 1000);
+    if (mode === 'pvp') {
+        window.isPvP = true;
+        window.playerTurn = 'waiting';
+        createEmptyBoard();
+        showMessage("A procurar adversário...", 'info');
+        turnIndicator.className = '';
+        turnPlayerDisplay.textContent = "Aguardando...";
+        await joinPvPGame();
     } else {
-        updateTurnIndicator();
-        showMessage("Você (Azul) começa! Lance o dado.");
-        resetDiceUI();
+        window.isPvP = false;
+        AI_DIFFICULTY = document.getElementById('aiLevel').value;
+        window.playerTurn = document.getElementById('firstPlayer').value;
+        switch(AI_DIFFICULTY) {
+            case 'easy': AI_SIMULATIONS = 100; break;
+            case 'medium': AI_SIMULATIONS = 300; break;
+            case 'hard': AI_SIMULATIONS = 1000; break;
+        }
+        createLocalBoard();
+        if (window.playerTurn === 'red') {
+            updateTurnIndicatorLocal();
+            showMessage("Computador começa...");
+            setTimeout(() => { if(window.handleAITurn) window.handleAITurn(0); }, 1000);
+        } else {
+            updateTurnIndicatorLocal();
+            showMessage("Sua vez! Lance o dado.");
+            resetDiceUI();
+        }
     }
 });
 
-if(btnVoltarMenu) btnVoltarMenu.addEventListener('click', () => {
-    configPanel.classList.add('oculto');
-    loginPage.classList.remove('oculto');
-    sessionStorage.removeItem('currentUserNick');
-    loginForm.reset();
-});
-
-// --- 5. LÓGICA DE JOGO ---
-
-function showMessage(msg, type='info') {
-    if(messageBar) { messageBar.textContent = msg; messageBar.className = type; }
-}
-
-function updateTurnIndicator() {
-    if (window.playerTurn === 'blue') {
-        // ALTERAÇÃO AQUI:
-        // Se quiser usar o nome de utilizador:
-        // const user = sessionStorage.getItem('currentUserNick') || 'Eu';
-        // turnPlayerDisplay.textContent = user + " (Azul)";
-
-        // Se quiser forçar sempre "Eu (Azul)":
-        if(turnPlayerDisplay) turnPlayerDisplay.textContent = "Eu (Azul)";
-
-        if(turnIndicator) turnIndicator.className = 'blue';
-        if(dicePanel) { dicePanel.style.opacity = "1"; dicePanel.style.pointerEvents = "auto"; }
+// --- 6. LÓGICA PVP (MODO ESPELHO) ---
+async function joinPvPGame() {
+    const data = { group: GROUP_ID, nick: userNick, password: userPass, size: window.BOARD_SIZE };
+    const result = await apiRequest('join', data);
+    if (result && result.game) {
+        gameId = result.game;
+        startServerEvents(gameId);
     } else {
-        if(turnPlayerDisplay) turnPlayerDisplay.textContent = 'Computador (Vermelho)';
-        if(turnIndicator) turnIndicator.className = 'red';
-        if(dicePanel) { dicePanel.style.opacity = "0.7"; dicePanel.style.pointerEvents = "none"; }
+        showMessage("Erro ao entrar.", 'error');
+        setTimeout(() => { gamePage.classList.add('oculto'); configPanel.classList.remove('oculto'); }, 2000);
     }
 }
 
-function createBoard() {
-    boardElement.innerHTML = '';
-    boardElement.style.gridTemplateColumns = `repeat(${window.BOARD_SIZE}, 50px)`;
+function startServerEvents(id) {
+    if (eventSource) eventSource.close();
+    const url = `${SERVER_URL}/update?nick=${encodeURIComponent(userNick)}&game=${encodeURIComponent(id)}`;
+    eventSource = new EventSource(url);
+    eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.error) console.error(data.error);
+        if (data.winner) handleServerGameOver(data.winner);
+        else updateBoardFromServer(data);
+    };
+    eventSource.onerror = (err) => console.error("Erro SSE:", err);
+}
+
+function updateBoardFromServer(data) {
+    if (data.players) {
+        const myColorName = data.players[userNick];
+        myServerColor = myColorName ? myColorName.toLowerCase() : 'blue';
+        boardElement.classList.remove('board-rotated');
+    }
+
+    if (data.pieces) {
+        // AQUI ESTÁ A CORREÇÃO: Chama a função de espelho
+        renderServerPiecesWithMirror(data.pieces);
+    }
+
+    if (data.turn) {
+        const isMyTurn = (data.turn === userNick);
+        window.playerTurn = isMyTurn ? 'blue' : 'red';
+
+        if (data.dice && data.dice.value) {
+             const serverDiceValue = data.dice.value;
+             if (diceValue !== serverDiceValue) {
+                 const visualColor = isMyTurn ? 'blue' : 'red';
+                 addLog(visualColor, serverDiceValue);
+             }
+             diceValue = serverDiceValue;
+             diceValueDisplay.textContent = diceValue;
+             visualizeDice(diceValue);
+        } else {
+             if (!data.dice || data.step === 'roll') diceValue = 0;
+        }
+
+        if (isMyTurn) {
+            turnPlayerDisplay.textContent = "EU";
+            turnIndicator.className = 'blue';
+            dicePanel.style.opacity = "1";
+            dicePanel.style.pointerEvents = "auto";
+
+            if (diceValue > 0) {
+                const currentState = window.buildStateFromDOM();
+                const myPieceVal = 2;
+
+                const possibleMoves = window.legalMovesForDice(currentState, myPieceVal, diceValue);
+
+                if (possibleMoves.length === 0) {
+                    diceMessage.textContent = "Sem jogadas...";
+                    showMessage(`Dado: ${diceValue}. Sem movimentos! Passando...`, 'error');
+                    setTimeout(() => { if (window.playerTurn === 'blue' && diceValue > 0) serverPass(); }, 2000);
+                } else {
+                    diceMessage.textContent = "Selecione uma peça.";
+                    showMessage(`Dado: ${diceValue}. Mova uma peça!`, 'info');
+                }
+            } else {
+                diceValueDisplay.textContent = "-";
+                diceMessage.textContent = "Clique para lançar";
+                showMessage("Sua vez! Lance o dado.", 'info');
+            }
+        } else {
+            turnPlayerDisplay.textContent = `ADVERSÁRIO (${data.turn})`;
+            turnIndicator.className = 'red';
+            dicePanel.style.opacity = "0.7";
+            dicePanel.style.pointerEvents = "none";
+
+            if (diceValue > 0) {
+                 diceValueDisplay.textContent = diceValue;
+                 visualizeDice(diceValue);
+                 showMessage(`Adversário tirou ${diceValue}.`, 'info');
+            } else {
+                 diceValueDisplay.textContent = "-";
+                 showMessage(`Aguardando ${data.turn}...`, 'info');
+            }
+        }
+    }
+}
+
+// --- RENDERIZAÇÃO COM ESPELHO (MIRROR) ---
+function renderServerPiecesWithMirror(serverPieces) {
+    const squares = document.querySelectorAll('.square');
+
+    // 1. Limpeza Total para evitar clones
+    squares.forEach(sq => sq.innerHTML = '');
+
     window.matrix = [];
     for(let r=0; r<window.NUM_ROWS; r++) {
         window.matrix[r] = [];
         for(let c=0; c<window.BOARD_SIZE; c++) window.matrix[r][c] = 0;
     }
 
-    for (let r=0; r<window.NUM_ROWS; r++) {
-        for (let c=0; c<window.BOARD_SIZE; c++) {
+    const myColor = myServerColor ? myServerColor.toLowerCase() : 'blue';
+
+    // SE SOU BLUE: Rotação 180º (Inverto Linhas E Colunas)
+    // SE SOU RED: Troca de Cor apenas
+    let rotateBoard = (myColor === 'blue');
+    let swapColors = (myColor === 'red');
+
+    serverPieces.forEach((cell, serverIndex) => {
+        if (!cell) return;
+
+        const r_server = Math.floor(serverIndex / window.BOARD_SIZE);
+        const c_server = serverIndex % window.BOARD_SIZE;
+
+        let r_visual = r_server;
+        let c_visual = c_server;
+
+        if (rotateBoard) {
+            // ROTAÇÃO 180º:
+            // O que está em cima (0) vai para baixo (3)
+            // O que está à esquerda (0) vai para a direita (8)
+            r_visual = (window.NUM_ROWS - 1) - r_server;
+            c_visual = (window.BOARD_SIZE - 1) - c_server;
+        }
+
+        const visualIndex = r_visual * window.BOARD_SIZE + c_visual;
+
+        if (visualIndex < 0 || visualIndex >= squares.length) return;
+
+        const rawColor = cell.color ? cell.color.toLowerCase() : 'blue';
+        let visualColor = rawColor;
+        if (swapColors) {
+            visualColor = (rawColor === 'red') ? 'blue' : 'red';
+        }
+
+        const sq = squares[visualIndex];
+        const isFirstMove = !cell.inMotion;
+        const visitedEnemy = cell.reachedLastRow;
+
+        const p = document.createElement('div');
+        p.setAttribute('data-first-move', isFirstMove.toString());
+        p.setAttribute('data-visited-enemy', visitedEnemy.toString());
+
+        if (visualColor === 'blue') {
+            p.className = 'piece_blue';
+            window.matrix[r_visual][c_visual] = 2;
+        } else {
+            p.className = 'piece_red';
+            window.matrix[r_visual][c_visual] = 1;
+        }
+
+        sq.appendChild(p);
+    });
+}
+
+function handleServerGameOver(winnerNick) {
+    if (eventSource) eventSource.close();
+    const iWon = (winnerNick === userNick);
+    endGameMessage.textContent = iWon ? "VITÓRIA!" : "DERROTA!";
+    endGameMenu.classList.remove('oculto');
+    overlay.classList.add('ativo');
+    updateRankingTables();
+}
+
+async function serverRoll() {
+    await apiRequest('roll', { nick: userNick, password: userPass, game: gameId });
+}
+
+async function serverMove(row, col) {
+    // 1. Validação Visual
+    const currentState = window.buildStateFromDOM();
+    const myPieceVal = 2;
+    const validMoves = window.legalMovesForDice(currentState, myPieceVal, diceValue);
+
+    // Verifica se a ORIGEM do clique é válida
+    const isValid = validMoves.some(m => m.row === row && m.col === col);
+
+    if (!isValid) {
+        showMessage("Jogada inválida para este dado!", 'error');
+        return;
+    }
+
+    // 2. Tradução para Servidor (Inverter Linhas E Colunas se for Blue)
+    const myColor = myServerColor ? myServerColor.toLowerCase() : 'blue';
+
+    let r_server = row;
+    let c_server = col;
+
+    if (myColor === 'blue') {
+        // Desfazer a Rotação 180º para enviar ao servidor
+        r_server = (window.NUM_ROWS - 1) - row;
+        c_server = (window.BOARD_SIZE - 1) - col;
+    }
+
+    const moveIndex = (r_server * window.BOARD_SIZE) + c_server;
+
+    // Log para debug (podes remover depois)
+    console.log(`Click [${row},${col}] -> Server [${r_server},${c_server}] (Index: ${moveIndex})`);
+
+    const result = await apiRequest('notify', {
+        nick: userNick,
+        password: userPass,
+        game: gameId,
+        cell: moveIndex
+    });
+
+    if (result && !result.error) {
+        diceMessage.textContent = "Aguardando...";
+    }
+}
+
+async function serverPass() {
+    await apiRequest('pass', { nick: userNick, password: userPass, game: gameId });
+}
+
+btnDesistir.addEventListener('click', async () => {
+    if (window.isPvP && gameId) {
+        await apiRequest('leave', { nick: userNick, password: userPass, game: gameId });
+        if (eventSource) eventSource.close();
+        showEndGameMenu(window.playerTurn === 'blue' ? 'red' : 'blue');
+    } else {
+        showEndGameMenu('red');
+    }
+});
+
+// --- 7. RANKINGS ---
+async function updateRankingTables() {
+    const result = await apiRequest('ranking', { group: GROUP_ID, size: window.BOARD_SIZE || 9 });
+    if (result && result.ranking) {
+        const tbodyList = [document.querySelector('#classificacoes tbody'), document.querySelector('#classificacoesJogo tbody')];
+        tbodyList.forEach(tbody => {
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            result.ranking.forEach((row, i) => {
+                const tr = document.createElement('tr');
+                const derrotas = row.games - row.victories;
+                tr.innerHTML = `<td>${i+1}º</td><td>${row.nick}</td><td>${row.victories}</td><td>${derrotas}</td>`;
+                tbody.appendChild(tr);
+            });
+        });
+    }
+}
+
+// --- 8. UI E TABULEIRO (LOCAL) ---
+function createEmptyBoard() {
+    boardElement.innerHTML = '';
+    boardElement.style.gridTemplateColumns = `repeat(${window.BOARD_SIZE}, 50px)`;
+    for(let r=0; r<window.NUM_ROWS; r++) {
+        for(let c=0; c<window.BOARD_SIZE; c++) {
             const sq = document.createElement('div');
             sq.className = 'square';
             sq.dataset.row = r; sq.dataset.col = c;
-            if(c === window.BOARD_SIZE-1) sq.dataset.lastCol = 'true';
-
-            if (r === 0) {
-                const p = document.createElement('div');
-                p.className = 'piece_red';
-                p.setAttribute('data-first-move', 'true');
-                p.setAttribute('data-visited-enemy', 'false');
-                sq.appendChild(p);
-                window.matrix[r][c] = 1;
-                sq.addEventListener('click', handleClick);
-            } else if (r === window.NUM_ROWS-1) {
-                const p = document.createElement('div');
-                p.className = 'piece_blue';
-                p.setAttribute('data-first-move', 'true');
-                p.setAttribute('data-visited-enemy', 'false');
-                sq.appendChild(p);
-                window.matrix[r][c] = 2;
-                sq.addEventListener('click', handleClick);
-            } else {
-                sq.addEventListener('click', handleClick);
-            }
+            sq.addEventListener('click', handleSquareClick);
             boardElement.appendChild(sq);
         }
     }
-    updateTurnIndicator();
 }
 
-async function player_vs_player_setup() {
-    async function joinGame(group = 35, nick = Null, password = Null, size = 9) {
-        // Lógica para o jogador juntar-se ao jogo
-        let response = await fetch(`${server}/join`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ group: group, nick: nick, password: password, size: size })
-        });
-
-        const data = await response.json();
-        if (data.error) {
-            showMessage(`Erro ao juntar-se ao jogo: ${data.error}`, 'error');
-            return;
-        }
-        // Configurar o jogo com os dados recebidos
-        configPanel.classList.add('oculto');
-        gamePage.classList.remove('oculto');
-        createBoard();
-        clearLog();
-        window.playerTurn = 'blue'; // ou 'red', dependendo do que o servidor indicar
-        updateTurnIndicator();
-        showMessage("Jogo iniciado! É a sua vez.", 'info');
-        console.log("Jogo PvP iniciado:", data.game);
-        sessionStorage.setItem('currentGameId', data.game);
-        return data.game;
-    }
-    async function updateGame(gameId, nick) {
-        let response = await fetch(`${server}/update`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ game: gameId, nick: nick })
-        });
-        const data = await response.json();
-        if (data.error) {
-            showMessage(`Erro ao atualizar o jogo: ${data.error}`, 'error');
-            return;
-        }
-        // Atualize o estado do jogo com os dados recebidos
-    }
-    async function waitForOtherPlayer(gameId, nick) {
-        showMessage("Aguardando outro jogador...", 'info');
-        console.log("=== INICIANDO ESPERA POR OUTRO JOGADOR ===");
-        console.log("Game ID:", gameId);
-        console.log("Nick:", nick);
-        
-        return new Promise((resolve, reject) => {
-            const eventSource = new EventSource(`${server}/update?nick=${encodeURIComponent(nick)}&game=${encodeURIComponent(gameId)}`);
-            
-            eventSource.onmessage = (event) => {
-                try {
-                    console.log("Mensagem SSE recebida:", event.data);
-                    const data = JSON.parse(event.data);
-                    console.log("Dados parseados:", data);
-                    
-                    if (data.error) {
-                        showMessage(`Erro: ${data.error}`, 'error');
-                        console.error("Erro do servidor:", data.error);
-                        eventSource.close();
-                        reject(data.error);
-                        return;
-                    }
-                    
-                    // Verificar se o jogo tem 2 jogadores (board/pieces definido E players com 2 entradas)
-                    const hasBoard = data.board || data.pieces;
-                    const hasTwoPlayers = data.players && Object.keys(data.players).length === 2;
-                    
-                    if (hasBoard && hasTwoPlayers) {
-                        showMessage("Outro jogador entrou! Começando o jogo...", 'success');
-                        console.log("=== JOGO PRONTO PARA INICIAR ===");
-                        console.log("Dados do jogo:", data);
-                        eventSource.close();
-                        resolve(data);
-                    } else {
-                        console.log("Aguardando segundo jogador... Dados atuais:", data);
-                        console.log("Jogadores atuais:", Object.keys(data.players || {}).length);
-                    }
-                } catch (error) {
-                    console.error("Erro ao processar mensagem SSE:", error);
-                    eventSource.close();
-                    reject(error);
-                }
-            };
-            
-            eventSource.onerror = (error) => {
-                console.error("Erro no EventSource:", error);
-                showMessage("Erro de conexão ao aguardar jogador", 'error');
-                eventSource.close();
-                reject(error);
-            };
-            
-            // Timeout de segurança (5 minutos)
-            setTimeout(() => {
-                if (eventSource.readyState !== EventSource.CLOSED) {
-                    console.log("Timeout ao aguardar jogador");
-                    showMessage("Timeout ao aguardar jogador", 'error');
-                    eventSource.close();
-                    reject(new Error("Timeout"));
-                }
-            }, 300000); // 5 minutos = 300000ms
-        });
-    }
-
-    async function playGame(gameId, nick = null, password = null, size = 9) {
-        console.log("=== INICIANDO PLAYGAME ===");
-        console.log("Game ID:", gameId);
-        console.log("Nick:", nick);
-        
-        try {
-            const gameData = await waitForOtherPlayer(gameId, nick);
-            console.log("=== JOGO INICIADO ===");
-            console.log("Dados do jogo:", gameData);
-            
-            // Processar dados do servidor
-            if (gameData) {
-                console.log("Pieces:", gameData.pieces);
-                console.log("Turno:", gameData.turn);
-                console.log("Jogadores:", gameData.players);
-                console.log("Step:", gameData.step);
-                
-                // Determinar qual é a minha cor
-                const myColor = gameData.players[nick]; // "Blue" ou "Red"
-                console.log("Minha cor:", myColor);
-                
-                // Atualizar o tabuleiro com os dados do servidor
-                updateBoardFromServerData(gameData);
-                
-                // Configurar de quem é o turno
-                const isMyTurn = gameData.turn === nick;
-                window.playerTurn = myColor === "Blue" ? 'blue' : 'red';
-                updateTurnIndicator();
-                
-                if (isMyTurn) {
-                    showMessage("É a sua vez! Lance o dado.", 'info');
-                    resetDiceUI();
-                } else {
-                    showMessage("Aguardando jogada do adversário...", 'info');
-                }
-                
-                // Iniciar loop de atualizações do jogo
-                startGameLoop(gameId, nick, myColor);
+function createLocalBoard() {
+    createEmptyBoard();
+    window.matrix = [];
+    const squares = document.querySelectorAll('.square');
+    for(let r=0; r<window.NUM_ROWS; r++) {
+        window.matrix[r] = [];
+        for(let c=0; c<window.BOARD_SIZE; c++) {
+            window.matrix[r][c] = 0;
+            const index = r * window.BOARD_SIZE + c;
+            const sq = squares[index];
+            if (r === 0) {
+                const p = document.createElement('div'); p.className = 'piece_red';
+                p.setAttribute('data-first-move', 'true'); p.setAttribute('data-visited-enemy', 'false');
+                sq.appendChild(p); window.matrix[r][c] = 1;
+            } else if (r === window.NUM_ROWS-1) {
+                const p = document.createElement('div'); p.className = 'piece_blue';
+                p.setAttribute('data-first-move', 'true'); p.setAttribute('data-visited-enemy', 'false');
+                sq.appendChild(p); window.matrix[r][c] = 2;
             }
-        } catch (error) {
-            console.error("Erro ao iniciar jogo:", error);
-            showMessage("Erro ao iniciar jogo PvP", 'error');
         }
     }
+}
 
-    // Nova função para atualizar o tabuleiro com dados do servidor
-    function updateBoardFromServerData(gameData) {
-        console.log("Atualizando tabuleiro com dados do servidor");
-        
-        // O servidor retorna um array de 36 peças (9x4 tabuleiro)
-        // pieces[i] pode ser: { color: "Blue"/"Red", inMotion: bool, reachedLastRow: bool } ou null
-        
-        const pieces = gameData.pieces || [];
-        const squares = document.querySelectorAll('.square');
-        
-        // Limpar tabuleiro atual
-        squares.forEach(sq => {
-            sq.innerHTML = '';
-            const row = parseInt(sq.dataset.row);
-            const col = parseInt(sq.dataset.col);
-            window.matrix[row][col] = 0;
-        });
-        
-        // Recriar peças baseado nos dados do servidor
-        pieces.forEach((piece, index) => {
-            if (!piece) return;
-            
-            const row = Math.floor(index / window.BOARD_SIZE);
-            const col = index % window.BOARD_SIZE;
-            const square = squares[index];
-            
-            if (!square) return;
-            
-            const pieceDiv = document.createElement('div');
-            pieceDiv.className = piece.color === "Blue" ? 'piece_blue' : 'piece_red';
-            pieceDiv.setAttribute('data-first-move', piece.inMotion ? 'false' : 'true');
-            pieceDiv.setAttribute('data-visited-enemy', piece.reachedLastRow ? 'true' : 'false');
-            
-            square.appendChild(pieceDiv);
-            window.matrix[row][col] = piece.color === "Blue" ? 2 : 1;
-        });
-        
-        console.log("Tabuleiro atualizado");
-    }
+async function handleSquareClick(e) {
+    const sq = e.currentTarget;
+    const r = parseInt(sq.dataset.row);
+    const c = parseInt(sq.dataset.col);
 
-    // Nova função para manter o loop de atualizações
-    function startGameLoop(gameId, nick, myColor) {
-        console.log("Iniciando loop de atualizações do jogo");
-        
-        const eventSource = new EventSource(`${server}/update?nick=${encodeURIComponent(nick)}&game=${encodeURIComponent(gameId)}`);
-        
-        eventSource.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                console.log("Atualização do jogo:", data);
-                
-                // Verificar se há vencedor
-                if (data.winner) {
-                    console.log("Jogo terminado! Vencedor:", data.winner);
-                    const iWon = data.winner === nick;
-                    showEndGameMenu(iWon ? 'blue' : 'red');
-                    eventSource.close();
-                    window.currentEventSource = null;
-                    return;
-                }
-                
-                // Atualizar estado do jogo
-                if (data.pieces) {
-                    updateBoardFromServerData(data);
-                }
-                
-                // Verificar de quem é o turno
-                if (data.turn) {
-                    console.log("Turno de:", data.turn);
-                    const isMyTurn = data.turn === nick;
-                    
-                    if (isMyTurn) {
-                        showMessage("É a sua vez! Lance o dado.", 'info');
-                        window.playerTurn = myColor === "Blue" ? 'blue' : 'red';
+    // Verificações básicas de turno
+    if (window.playerTurn !== 'blue') return; // Só clica se for a vez do 'blue' (que és tu visualmente)
+    if (diceValue === 0) return;
+
+    const piece = sq.querySelector('.piece_blue');
+
+    // LÓGICA UNIFICADA (PvP e PvC)
+    // Se clicou numa peça sua, tentamos destacar o movimento
+    if (piece) {
+        clearHighlights();
+        sq.classList.add('selected');
+
+        // Mostra as opções de jogada visualmente
+        const target = await highlightMove(r, c, diceValue, piece, sq);
+
+        if (target instanceof HTMLElement) {
+            // Se o utilizador clicou num quadrado de destino válido:
+
+            if (window.isPvP) {
+                // --- MODO PVP ---
+                // Envia a jogada ao servidor usando a posição da peça de ORIGEM (r, c)
+                // O servidor calcula o destino, nós só dizemos "move esta peça"
+                await serverMove(r, c);
+
+                // Limpa seleção visual
+                clearHighlights();
+                sq.classList.remove('selected');
+            } else {
+                // --- MODO PvC (Local) ---
+                const res = await move(r, c, diceValue, piece, sq);
+                if(res==='success' || res==='success_win') {
+                    if(res==='success_win') return;
+                    if([1,4,6].includes(diceValue)) {
+                        showMessage("Joga de novo!", 'success');
                         resetDiceUI();
                     } else {
-                        showMessage("Aguardando jogada do adversário...", 'info');
-                        window.playerTurn = myColor === "Blue" ? 'red' : 'blue';
-                        updateTurnIndicator();
+                        passarVezAoPC();
                     }
+                } else if (res==='reroll_only') {
+                    resetDiceUI();
                 }
-                
-            } catch (error) {
-                console.error("Erro ao processar atualização:", error);
             }
-        };
-        
-        eventSource.onerror = (error) => {
-            console.error("Erro no loop do jogo:", error);
-            eventSource.close();
-            window.currentEventSource = null;
-        };
-        
-        // Armazenar eventSource para poder fechar depois
-        window.currentEventSource = eventSource;
-    }
-
-/* 
-    async function playGame(gameId, nick = Null, password = Null, size = 9) {
-        // Lógica para jogar o jogo com o ID fornecido
-        const gameData = await waitForOtherPlayer(gameId, nick);
-        console.log("Jogando jogo com ID:", gameId);
-        // Aqui você pode implementar a lógica para interagir com o servidor e atualizar o estado do jogo
-
-    } */
-
-    if(btnDesistir) btnDesistir.addEventListener('click', () => {
-        if (window.currentEventSource) {
-            window.currentEventSource.close();
-            window.currentEventSource = null;
+        } else {
+            // Cancelou ou clicou fora
+            sq.classList.remove('selected');
         }
-        showEndGameMenu('red');
-    });
-
-    if(btnVoltarInicio) btnVoltarInicio.addEventListener('click', () => {
-        if (window.currentEventSource) {
-            window.currentEventSource.close();
-            window.currentEventSource = null;
-        }
-        location.reload();
-    });
-
-    try {
-        console.log("Juntando-se ao jogo PvP...");
-        game = await joinGame(35, sessionStorage.getItem('currentUserNick'), sessionStorage.getItem('currentUserPassword'), window.BOARD_SIZE);
-        playGame(game, sessionStorage.getItem('currentUserNick'), sessionStorage.getItem('currentUserPassword'), window.BOARD_SIZE);
-
-    } catch (error) {
-        showMessage("Erro ao iniciar jogo PvP.", 'error');
     }
 }
 
-function rollDice() {
-    let tab = 0;
-    for(let i=0; i<4; i++) {
-        if(Math.random()>=0.5) { tab++; diceSticks[i].className='stick claro'; }
-        else diceSticks[i].className='stick escuro';
-    }
-    diceValue = (tab===0)?6:tab;
-    diceValueDisplay.textContent = diceValue;
-    diceMessage.textContent = "Selecione uma peça.";
-    showMessage(`Dado: ${diceValue}. Mova uma peça.`);
-    return diceValue;
-}
+if(dicePanel) dicePanel.addEventListener('click', () => {
+    if (window.isPvP) {
+        if (window.playerTurn !== 'blue') return showMessage("Não é a sua vez!", 'error');
+        if (diceValue !== 0) return showMessage("Já lançou.", 'error');
+        serverRoll();
+    } else {
+        if (window.playerTurn !== 'blue') return showMessage("Vez do PC!", 'error');
+        if (diceValue !== 0) return showMessage("Já lançou.", 'error');
+        rollDiceLocal();
+        addLog('blue', diceValue);
 
-if(dicePanel) dicePanel.addEventListener('click', async () => {
-    if(diceValue !== 0) return showMessage("Já lançou o dado.", 'error');
-    if(window.playerTurn !== 'blue') return showMessage("Vez do computador!", 'error');
-
-    rollDice();
-    addLog('blue', diceValue);
-
-    if(window.legalMovesForDice && window.buildStateFromDOM) {
-        const state = window.buildStateFromDOM();
-        const moves = window.legalMovesForDice(state, 2, diceValue);
-
-        if(moves.length === 0) {
-            showMessage(`Sem jogadas válidas para ${diceValue}.`, 'error');
-
-            await new Promise(r => setTimeout(r, 2000));
-
-            if(diceValue===1||diceValue===4||diceValue===6) {
-                showMessage("Joga de novo! (Reroll)", 'info');
-                resetDiceUI();
-            } else {
-                showMessage("Passa a vez ao computador...", 'info');
-                passarVezAoPC();
+        if(window.legalMovesForDice) {
+            const moves = window.legalMovesForDice(window.buildStateFromDOM(), 2, diceValue);
+            if(moves.length === 0) {
+                 showMessage(`Sem jogadas para ${diceValue}.`, 'error');
+                 setTimeout(() => {
+                     if([1,4,6].includes(diceValue)) resetDiceUI();
+                     else passarVezAoPC();
+                 }, 2000);
             }
         }
     }
 });
 
-// --- 6. MOVIMENTO ---
+function rollDiceLocal() {
+    let tab = 0;
+    const sticks = document.querySelectorAll('#dice-sticks .stick');
+    for(let i=0; i<4; i++) { if(Math.random()>=0.5) { tab++; sticks[i].className='stick claro'; } else sticks[i].className='stick escuro'; }
+    diceValue = (tab===0)?6:tab;
+    diceValueDisplay.textContent = diceValue;
+    diceMessage.textContent = "Selecione peça.";
+    showMessage(`Dado: ${diceValue}.`);
+    return diceValue;
+}
+function visualizeDice(val) {
+    const sticks = document.querySelectorAll('#dice-sticks .stick');
+    let claros = (val === 6) ? 0 : val;
+    for(let i=0; i<4; i++) { if (i < claros) sticks[i].className='stick claro'; else sticks[i].className='stick escuro'; }
+}
+function showMessage(msg, type='info') { if(messageBar) { messageBar.textContent = msg; messageBar.className = type; } }
 
-async function move(row, col, diceValue, pieceElement, originalSq, aiMoveChoice=null) {
-    let r = parseInt(row);
-    let c = parseInt(col);
-    let first_move_used = false;
-
-    if(pieceElement.getAttribute('data-first-move') === 'true') {
-        if(diceValue === 1) {
-            first_move_used = true;
-            pieceElement.setAttribute('data-first-move', 'false');
-        } else {
-            showMessage("1º movimento requer Tâb (1).", 'error');
-            return (diceValue===4||diceValue===6) ? 'reroll_only' : 'fail';
-        }
+function updateTurnIndicatorLocal() {
+    if (window.playerTurn === 'blue') {
+        turnPlayerDisplay.textContent = "Eu (Azul)";
+        turnIndicator.className = 'blue';
+        dicePanel.style.opacity = "1";
+        dicePanel.style.pointerEvents = "auto";
+    } else {
+        turnPlayerDisplay.textContent = 'PC (Vermelho)';
+        turnIndicator.className = 'red';
+        dicePanel.style.opacity = "0.7";
+        dicePanel.style.pointerEvents = "none";
     }
-
-    for(let k=0; k<diceValue; k++) {
-        let dir = 0;
-        if(r === 1 || r === 3) dir = 1;
-        else if(r === 0 || r === 2) dir = -1;
-
-        // CORREÇÃO: Removemos lógica de recuo no 1º movimento
-        c += dir;
-
-        if(c < 0 || c >= window.BOARD_SIZE) {
-            const isBlue = pieceElement.classList.contains('piece_blue');
-            if (isBlue) {
-                if(r===3) { r=2; c=window.BOARD_SIZE-1; }
-                else if(r===2) { r=1; c=0; }
-                else if(r===1) {
-                    let choice = 'retreat';
-                    const visited = pieceElement.getAttribute('data-visited-enemy') === 'true';
-                    if(!visited && c>=window.BOARD_SIZE) {
-                        if(window.playerTurn==='blue') choice = await askDirection();
-                        else choice = aiMoveChoice;
-                    }
-                    if(choice === 'attack' && !visited) {
-                        r=0; c=window.BOARD_SIZE-1;
-                        pieceElement.setAttribute('data-visited-enemy', 'true');
-                    } else {
-                        r=2; c=window.BOARD_SIZE-1;
-                    }
-                }
-                else if(r===0) { r=1; c=0; }
-            }
-            else { // isRed
-                if(r===0) { r=1; c=0; }
-                else if(r===1) { r=2; c=window.BOARD_SIZE-1; }
-                else if(r===2) {
-                    let choice = 'retreat';
-                    const visited = pieceElement.getAttribute('data-visited-enemy') === 'true';
-                    if(!visited && c<0) {
-                        if(window.playerTurn==='red') choice = aiMoveChoice;
-                    }
-                    if(choice === 'attack' && !visited) {
-                        r=3; c=0;
-                        pieceElement.setAttribute('data-visited-enemy', 'true');
-                    } else {
-                        r=1; c=0;
-                    }
-                }
-                else if(r===3) { r=2; c=window.BOARD_SIZE-1; }
-            }
-        }
-    }
-
-    const pVal = window.matrix[row][col];
-    if(window.matrix[r][c] === pVal) {
-        showMessage("Casa ocupada por peça sua.", 'error');
-        if(first_move_used) pieceElement.setAttribute('data-first-move', 'true');
-        return 'fail';
-    }
-
-    const targetSq = document.querySelector(`.square[data-row='${r}'][data-col='${c}']`);
-    if(!targetSq) return 'fail';
-
-    if(window.matrix[r][c] !== 0) {
-        showMessage("Peça capturada!", 'info');
-        targetSq.innerHTML = '';
-    }
-
-    targetSq.appendChild(pieceElement);
-    window.matrix[r][c] = pVal;
-    window.matrix[row][col] = 0;
-
-    if(checkWinCondition()) return 'success_win';
-    return 'success';
 }
 
 function resetDiceUI() {
     diceValue = 0;
     if(diceValueDisplay) diceValueDisplay.textContent = "-";
     if(diceMessage) diceMessage.textContent = "Clique para lançar";
-    diceSticks.forEach(s => s.className='stick');
-    updateTurnIndicator();
+    const sticks = document.querySelectorAll('#dice-sticks .stick');
+    sticks.forEach(s => s.className='stick');
+    if(!window.isPvP) updateTurnIndicatorLocal();
 }
 
-function askDirection() {
-    return new Promise((resolve) => {
-        moveSelector.classList.remove('oculto');
-        overlay.classList.add('ativo');
-        moveAttackBtn.onclick = () => finish('attack');
-        moveRetreatBtn.onclick = () => finish('retreat');
-        function finish(choice) {
-            moveSelector.classList.add('oculto');
-            overlay.classList.remove('ativo');
-            resolve(choice);
+function addLog(color, val) {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="log-ball ${color}"></span> <span class="log-number ${color}">${val}</span>`;
+    if(diceLogList) diceLogList.prepend(li);
+}
+function clearLog() { if(diceLogList) diceLogList.innerHTML=''; }
+function toggleModal(m, s) { if(s) { m.classList.add('instrucoes-visiveis'); overlay.classList.add('ativo'); } else { m.classList.remove('instrucoes-visiveis', 'classificacoes-visiveis'); overlay.classList.remove('ativo'); } }
+function clearHighlights() { document.querySelectorAll('.square').forEach(s => s.classList.remove('selected','highlight-start','highlight-end')); }
+function highlight(sq) { clearHighlights(); sq.classList.add('highlight-end'); }
+
+if(btnInstrucoes) btnInstrucoes.addEventListener('click', ()=>toggleModal(instrucoesModal, true));
+if(btnFecharInstrucoes) btnFecharInstrucoes.addEventListener('click', ()=>toggleModal(instrucoesModal, false));
+if(btnClassificacoes) btnClassificacoes.addEventListener('click', () => { updateRankingTables(); toggleModal(classificacoesModal, true); });
+if(btnFecharClassificacoes) btnFecharClassificacoes.addEventListener('click', () => toggleModal(classificacoesModal, false));
+if(btnInstrucoesJogo) btnInstrucoesJogo.addEventListener('click', ()=>toggleModal(instrucoesJogoModal, true));
+if(btnFecharInstrucoesJogo) btnFecharInstrucoesJogo.addEventListener('click', ()=>toggleModal(instrucoesJogoModal, false));
+if(btnClassificacoesJogo) btnClassificacoesJogo.addEventListener('click', () => { updateRankingTables(); toggleModal(classificacoesJogoModal, true); });
+if(btnFecharClassificacoesJogo) btnFecharClassificacoesJogo.addEventListener('click', () => toggleModal(classificacoesJogoModal, false));
+if(overlay) overlay.addEventListener('click', () => {
+    document.querySelectorAll('.instrucoes-visiveis, .classificacoes-visiveis').forEach(el => el.classList.remove('instrucoes-visiveis', 'classificacoes-visiveis'));
+    overlay.classList.remove('ativo');
+    const ms = document.getElementById('moveSelector');
+    if(ms) ms.classList.add('oculto');
+});
+if(btnVoltarMenu) btnVoltarMenu.addEventListener('click', () => { if(eventSource) eventSource.close(); configPanel.classList.add('oculto'); loginPage.classList.remove('oculto'); sessionStorage.removeItem('currentUserNick'); loginForm.reset(); });
+if(btnVoltarInicio) btnVoltarInicio.addEventListener('click', () => location.reload());
+if(btnJogarNovamente) btnJogarNovamente.addEventListener('click', () => { if(eventSource) eventSource.close(); endGameMenu.classList.add('oculto'); overlay.classList.remove('ativo'); gamePage.classList.add('oculto'); configPanel.classList.remove('oculto'); });
+
+// As funções move/highlightMove locais ficam aqui em baixo inalteradas (como no original) para o modo PvC
+async function move(row, col, diceValue, pieceElement, originalSq, aiMoveChoice=null) {
+    let r = parseInt(row); let c = parseInt(col); let first_move_used = false;
+    if(pieceElement.getAttribute('data-first-move') === 'true') {
+        if(diceValue === 1) { first_move_used = true; pieceElement.setAttribute('data-first-move', 'false'); }
+        else { showMessage("1º movimento requer Tâb (1).", 'error'); return (diceValue===4||diceValue===6) ? 'reroll_only' : 'fail'; }
+    }
+    for(let k=0; k<diceValue; k++) {
+        let dir = 0; if(r === 1 || r === 3) dir = 1; else if(r === 0 || r === 2) dir = -1;
+        c += dir;
+        if(c < 0 || c >= window.BOARD_SIZE) {
+            const isBlue = pieceElement.classList.contains('piece_blue');
+            if (isBlue) {
+                if(r===3) { r=2; c=window.BOARD_SIZE-1; } else if(r===2) { r=1; c=0; } else if(r===1) {
+                    let choice = 'retreat';
+                    const visited = pieceElement.getAttribute('data-visited-enemy') === 'true';
+                    if(!visited && c>=window.BOARD_SIZE) { if(window.playerTurn==='blue') choice = await askDirection(); else choice = aiMoveChoice; }
+                    if(choice === 'attack' && !visited) { r=0; c=window.BOARD_SIZE-1; pieceElement.setAttribute('data-visited-enemy', 'true'); } else { r=2; c=window.BOARD_SIZE-1; }
+                } else if(r===0) { r=1; c=0; }
+            } else {
+                if(r===0) { r=1; c=0; } else if(r===1) { r=2; c=window.BOARD_SIZE-1; } else if(r===2) {
+                    let choice = 'retreat';
+                    const visited = pieceElement.getAttribute('data-visited-enemy') === 'true';
+                    if(!visited && c<0) { if(window.playerTurn==='red') choice = aiMoveChoice; }
+                    if(choice === 'attack' && !visited) { r=3; c=0; pieceElement.setAttribute('data-visited-enemy', 'true'); } else { r=1; c=0; }
+                } else if(r===3) { r=2; c=window.BOARD_SIZE-1; }
+            }
         }
-    });
+    }
+    const pVal = window.matrix[row][col];
+    if(window.matrix[r][c] === pVal) { showMessage("Casa ocupada por peça sua.", 'error'); if(first_move_used) pieceElement.setAttribute('data-first-move', 'true'); return 'fail'; }
+    const targetSq = document.querySelector(`.square[data-row='${r}'][data-col='${c}']`);
+    if(!targetSq) return 'fail';
+    if(window.matrix[r][c] !== 0) { showMessage("Peça capturada!", 'info'); targetSq.innerHTML = ''; }
+    targetSq.appendChild(pieceElement);
+    window.matrix[r][c] = pVal;
+    window.matrix[row][col] = 0;
+    if(checkWinConditionLocal()) return 'success_win';
+    return 'success';
 }
 
 async function highlightMove(row, col, diceValue, piece, sq) {
     let r=parseInt(row), c=parseInt(col);
-    let first_move_used = false;
-    if(piece.getAttribute('data-first-move') === 'true') {
-        if(diceValue===1) first_move_used=true;
-        else {
-            showMessage("Requer 1 (Tâb).", 'error');
-            return (diceValue===4||diceValue===6)?'reroll_only':'fail';
-        }
-    }
-
+    if(piece.getAttribute('data-first-move') === 'true') { if(diceValue!==1) { showMessage("Requer 1 (Tâb).", 'error'); return (diceValue===4||diceValue===6)?'reroll_only':'fail'; } }
     for(let k=0; k<diceValue; k++) {
-        let dir=0;
-        if(r===1||r===3) dir=1; else if(r===0||r===2) dir=-1;
-
-        // CORREÇÃO: Removemos lógica de recuo
+        let dir=0; if(r===1||r===3) dir=1; else if(r===0||r===2) dir=-1;
         c+=dir;
-
         if(c<0 || c>=window.BOARD_SIZE) {
             const isBlue = piece.classList.contains('piece_blue');
             if(isBlue) {
-                if(r===3) { r=2; c=window.BOARD_SIZE-1; }
-                else if(r===2) { r=1; c=0; }
-                else if(r===1) {
-                    if(piece.getAttribute('data-visited-enemy')==='false' && c>=window.BOARD_SIZE && window.playerTurn==='blue') {
-                        showMessage("Escolha o caminho...", 'info');
-                        r=0; c=window.BOARD_SIZE-1;
-                        break;
-                    }
+                if(r===3) { r=2; c=window.BOARD_SIZE-1; } else if(r===2) { r=1; c=0; } else if(r===1) {
+                    if(piece.getAttribute('data-visited-enemy')==='false' && c>=window.BOARD_SIZE && window.playerTurn==='blue') { showMessage("Escolha o caminho...", 'info'); r=0; c=window.BOARD_SIZE-1; break; }
                     r=2; c=window.BOARD_SIZE-1;
-                }
-                else if(r===0) { r=1; c=0; }
+                } else if(r===0) { r=1; c=0; }
             } else {
-                if(r===0) { r=1; c=0; }
-                else if(r===1) { r=2; c=window.BOARD_SIZE-1; }
-                else if(r===2) { r=1; c=0; }
-                else if(r===3) { r=2; c=window.BOARD_SIZE-1; }
+                if(r===0) { r=1; c=0; } else if(r===1) { r=2; c=window.BOARD_SIZE-1; } else if(r===2) { r=1; c=0; } else if(r===3) { r=2; c=window.BOARD_SIZE-1; }
             }
         }
     }
     const tSq = document.querySelector(`.square[data-row='${r}'][data-col='${c}']`);
     if(!tSq) return 'fail';
     if(window.matrix[r][c] === window.matrix[row][col]) { showMessage("Bloqueado.",'error'); return 'fail'; }
-
     highlight(tSq);
     const ok = await waitForClickOnSquare(tSq, sq);
     clearHighlights();
@@ -738,157 +682,47 @@ async function highlightMove(row, col, diceValue, piece, sq) {
 
 function waitForClickOnSquare(tSq, origin) {
     return new Promise(r => {
-        const handler = (e) => {
-            if(tSq.contains(e.target)) { clean(); r(true); }
-        };
-        const cancel = (e) => {
-            if(!tSq.contains(e.target)) { clean(); r(false); }
-        };
-        function clean() {
-            tSq.removeEventListener('click', handler);
-            document.removeEventListener('click', cancel, true);
-        }
-        setTimeout(() => {
-            tSq.addEventListener('click', handler);
-            document.addEventListener('click', cancel, true);
-        }, 100);
+        const handler = (e) => { if(tSq.contains(e.target)) { clean(); r(true); } };
+        const cancel = (e) => { if(!tSq.contains(e.target)) { clean(); r(false); } };
+        function clean() { tSq.removeEventListener('click', handler); document.removeEventListener('click', cancel, true); }
+        setTimeout(() => { tSq.addEventListener('click', handler); document.addEventListener('click', cancel, true); }, 100);
     });
 }
 
-async function handleClick(e) {
-    if(diceValue===0 || window.playerTurn!=='blue') return;
-    clearHighlights();
-    const sq = e.currentTarget;
-    const piece = sq.querySelector('.piece_blue');
-
-    if(piece) {
-        sq.classList.add('selected');
-        const r = sq.dataset.row; const c = sq.dataset.col;
-        const target = await highlightMove(r, c, diceValue, piece, sq);
-
-        if(target instanceof HTMLElement) {
-            const res = await move(r, c, diceValue, piece, sq);
-            if(res==='success' || res==='success_win') {
-                if(res==='success_win') return;
-                if(diceValue===1||diceValue===4||diceValue===6) {
-                    showMessage("Joga de novo!", 'success');
-                    resetDiceUI();
-                } else {
-                    showMessage("Vez do PC...", 'info');
-                    passarVezAoPC();
-                }
-            } else if (res==='reroll_only') {
-                showMessage("Tente de novo.", 'info');
-                resetDiceUI();
-            }
-        } else if (target==='cancel') {
-            showMessage("Cancelado.", 'error');
-        }
-    } else {
-        if(sq.querySelector('.piece_red')) showMessage("Peça do inimigo!", 'error');
-        else showMessage("Selecione uma peça Azul.", 'error');
-    }
+function askDirection() {
+    return new Promise((resolve) => {
+        const moveSelector = document.getElementById('moveSelector');
+        const moveAttackBtn = document.getElementById('move_attack');
+        const moveRetreatBtn = document.getElementById('move_retreat');
+        moveSelector.classList.remove('oculto'); overlay.classList.add('ativo');
+        moveAttackBtn.onclick = () => finish('attack');
+        moveRetreatBtn.onclick = () => finish('retreat');
+        function finish(choice) { moveSelector.classList.add('oculto'); overlay.classList.remove('ativo'); resolve(choice); }
+    });
 }
 
-function passarVezAoPC() {
-    window.playerTurn = 'red';
-    updateTurnIndicator();
-    if(window.handleAITurn) window.handleAITurn(0);
-    else { console.error("IA em falta"); }
-}
-
-function highlight(sq) { clearHighlights(); sq.classList.add('highlight-end'); }
-function clearHighlights() {
-    document.querySelectorAll('.square').forEach(s => s.classList.remove('selected','highlight-start','highlight-end'));
-}
-function checkWinCondition() {
+function checkWinConditionLocal() {
     const r = document.querySelectorAll('.piece_red').length;
     const b = document.querySelectorAll('.piece_blue').length;
     if(r===0) { showEndGameMenu('blue'); return true; }
     if(b===0) { showEndGameMenu('red'); return true; }
     return false;
 }
+
 function showEndGameMenu(winner) {
     endGameMessage.textContent = (winner==='blue') ? "GANHOU!" : "PERDEU!";
     endGameMenu.classList.remove('oculto');
     overlay.classList.add('ativo');
-    updateStats(winner);
-}
-if(btnDesistir) btnDesistir.addEventListener('click', () => showEndGameMenu('red'));
-if(btnVoltarInicio) btnVoltarInicio.addEventListener('click', () => location.reload());
-if(btnJogarNovamente) btnJogarNovamente.addEventListener('click', () => {
-    endGameMenu.classList.add('oculto');
-    createBoard();
-    resetDiceUI();
-    window.playerTurn='blue';
-    overlay.classList.remove('ativo');
-});
-
-function addLog(color, val) {
-    const li = document.createElement('li');
-    li.innerHTML = `<span class="log-ball ${color}"></span> <span class="log-number ${color}">${val}</span>`;
-    diceLogList.prepend(li);
-}
-function clearLog() { diceLogList.innerHTML=''; }
-
-function toggleModal(m, s) {
-    if(s) { m.classList.add('instrucoes-visiveis'); overlay.classList.add('ativo'); }
-    else { m.classList.remove('instrucoes-visiveis', 'classificacoes-visiveis'); overlay.classList.remove('ativo'); }
-}
-if(btnInstrucoes) btnInstrucoes.addEventListener('click', ()=>toggleModal(document.getElementById('instrucoes'), true));
-if(btnFecharInstrucoes) btnFecharInstrucoes.addEventListener('click', ()=>toggleModal(document.getElementById('instrucoes'), false));
-if(btnClassificacoes) btnClassificacoes.addEventListener('click', () => {
-    carregarClassificacoes();
-    toggleModal(classificacoesModal, true);
-});
-if(btnFecharClassificacoes) btnFecharClassificacoes.addEventListener('click', () => toggleModal(classificacoesModal, false));
-
-if(btnInstrucoesJogo) btnInstrucoesJogo.addEventListener('click', ()=>toggleModal(instrucoesJogoModal, true));
-if(btnFecharInstrucoesJogo) btnFecharInstrucoesJogo.addEventListener('click', ()=>toggleModal(instrucoesJogoModal, false));
-if(btnClassificacoesJogo) btnClassificacoesJogo.addEventListener('click', () => {
-    carregarClassificacoes();
-    toggleModal(classificacoesJogoModal, true);
-});
-if(btnFecharClassificacoesJogo) btnFecharClassificacoesJogo.addEventListener('click', () => toggleModal(classificacoesJogoModal, false));
-
-if(overlay) overlay.addEventListener('click', () => {
-    document.querySelectorAll('.instrucoes-visiveis, .classificacoes-visiveis').forEach(el => el.classList.remove('instrucoes-visiveis', 'classificacoes-visiveis'));
-    overlay.classList.remove('ativo');
-    moveSelector.classList.add('oculto');
-});
-
-function carregarClassificacoes() {
-    const lb = JSON.parse(localStorage.getItem('tab_leaderboard')) || {};
-    const sortedPlayers = Object.keys(lb).map(user => {
-        return { username: user, ...lb[user] };
-    }).sort((a, b) => b.victories - a.victories);
-
-    const tbodyLogin = document.querySelector('#classificacoes tbody');
-    const tbodyGame = document.querySelector('#classificacoesJogo tbody');
-
-    [tbodyLogin, tbodyGame].forEach(tbody => {
-        if (!tbody) return;
-        tbody.innerHTML = '';
-        sortedPlayers.forEach((player, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `<td>${index + 1}º</td><td>${player.username}</td><td>${player.victories}</td><td>${player.defeats}</td>`;
-            tbody.appendChild(row);
-        });
-    });
+    if(window.isPvP) updateRankingTables();
 }
 
-function updateStats(winner) {
-    const currentUser = sessionStorage.getItem('currentUserNick');
-    if (!currentUser) return;
-    const lb = JSON.parse(localStorage.getItem('tab_leaderboard')) || {};
-    if (!lb[currentUser]) lb[currentUser] = { victories: 0, defeats: 0 };
-    if (winner === 'blue') lb[currentUser].victories++;
-    else lb[currentUser].defeats++;
-    localStorage.setItem('tab_leaderboard', JSON.stringify(lb));
-    carregarClassificacoes();
+function passarVezAoPC() {
+    window.playerTurn = 'red';
+    updateTurnIndicatorLocal();
+    if(window.handleAITurn) window.handleAITurn(0);
 }
 
-window.addEventListener('load', carregarClassificacoes);
+// Exports
 window.addLog = addLog;
 window.move = move;
 window.showMessage = showMessage;

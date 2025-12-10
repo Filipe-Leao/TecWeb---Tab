@@ -1100,3 +1100,18 @@ body {
     color: #721c24;
     border: 1px solid #f5c6cb;
 }
+
+/* --- LÓGICA DE ROTAÇÃO PARA JOGADOR VERMELHO --- */
+.board-rotated {
+    transform: rotate(180deg);
+}
+
+.board-rotated .square {
+    /* Roda o quadrado de volta para endireitar os conteúdos (peças) */
+    transform: rotate(180deg);
+}
+
+/* Esconder setas quando rodado, pois ficariam com sentido errado */
+.board-rotated .square::before {
+    display: none !important;
+}
