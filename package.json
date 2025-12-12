@@ -1,0 +1,26 @@
+{
+  "name": "tab",
+  "version": "1.0.0",
+  "description": "You need to have the database running locally.",
+  "main": "MonteCarlo.js",
+  "scripts": {
+      "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Filipe-Leao/TecWeb---Tab.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Filipe-Leao/TecWeb---Tab/issues"
+  },
+  "homepage": "https://github.com/Filipe-Leao/TecWeb---Tab#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}

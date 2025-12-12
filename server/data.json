@@ -1,0 +1,15 @@
+{
+  "users": [
+    {
+      "nick": "teste",
+      "password": "256cdc796daf11a0503f47115cfee7eb",
+      "salt": "c31ea8561895e0a134ab8cc44e9bb0bf"
+    },
+    {
+      "nick": "filipe",
+      "password": "4f28ecd6fd62db4724c82bd5d9980191",
+      "salt": "8a112acdfd2173ecf42cefd32ac265b9"
+    }
+  ],
+  "games": []
+}
