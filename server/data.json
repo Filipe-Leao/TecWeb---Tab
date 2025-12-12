@@ -9,6 +9,11 @@
       "nick": "filipe",
       "password": "4f28ecd6fd62db4724c82bd5d9980191",
       "salt": "8a112acdfd2173ecf42cefd32ac265b9"
+    },
+    {
+      "nick": "a",
+      "password": "0ca8ea32a79d69d492e5029e107c4893",
+      "salt": "53ce97a6beaba3f6b0c2dd6433fc228d"
     }
   ],
   "games": []

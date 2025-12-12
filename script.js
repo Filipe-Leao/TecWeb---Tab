@@ -7,6 +7,7 @@ window.isPvP = false;
 
 // Configurações do Servidor
 const SERVER_URL = "http://twserver.alunos.dcc.fc.up.pt:8008";
+const LOCAL_SERVER_URL = "http://localhost:3000";
 const GROUP_ID = 35;
 
 // Estado do Utilizador e Jogo
@@ -69,7 +70,12 @@ const btnFecharClassificacoesJogo = document.getElementById('btnFecharClassifica
 
 // --- 3. API ---
 async function apiRequest(endpoint, data) {
-    const url = `${SERVER_URL}/${endpoint}`;
+    let url;
+    if (endpoint === 'register') {
+        url = `${LOCAL_SERVER_URL}/${endpoint}`;
+    } else {
+        url = `${SERVER_URL}/${endpoint}`;
+    }
     try {
         const response = await fetch(url, {
             method: 'POST',
