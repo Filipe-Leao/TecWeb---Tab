@@ -170,6 +170,12 @@ if(btnIniciarJogo) btnIniciarJogo.addEventListener('click', async () => {
             case 'hard': AI_SIMULATIONS = 1000; break;
         }
         createLocalBoard();
+        
+        // Inicializa o Canvas do Dado de Paus
+        if (window.initDiceCanvas) {
+            window.initDiceCanvas();
+        }
+        
         if (window.playerTurn === 'red') {
             updateTurnIndicatorLocal();
             showMessage("Computador começa...");
@@ -555,19 +561,39 @@ if(dicePanel) dicePanel.addEventListener('click', () => {
 function rollDiceLocal() {
     clearHighlights();
     let tab = 0;
-    const sticks = document.querySelectorAll('#dice-sticks .stick');
-    for(let i=0; i<4; i++) { if(Math.random()>=0.5) { tab++; sticks[i].className='stick claro'; } else sticks[i].className='stick escuro'; }
+    // Calcula o valor do dado (0-4 paus claros correspondem a 6,1,2,3,4)
+    for(let i=0; i<4; i++) { if(Math.random()>=0.5) tab++; }
     diceValue = (tab===0)?6:tab;
-    diceValueDisplay.textContent = diceValue;
+    
+    // Reseta o número para '-' enquanto anima
+    diceValueDisplay.textContent = "-";
     diceMessage.textContent = "Selecione peça.";
-    showMessage(`Dado: ${diceValue}.`);
-    addLog('blue', diceValue);
+    
+    // Canvas Animation: Anima o dado de paus
+    // Mostra mensagem, número e histórico DEPOIS de a animação terminar
+    if (window.animateDiceRoll) {
+        window.animateDiceRoll(diceValue, () => {
+            // Mostra tudo após a animação terminar
+            showMessage(`Dado: ${diceValue}.`);
+            diceValueDisplay.textContent = diceValue;
+            addLog('blue', diceValue);
+            console.log(`Dado: ${diceValue}`);
+        });
+    } else {
+        // Fallback se Canvas não estiver disponível
+        showMessage(`Dado: ${diceValue}.`);
+        diceValueDisplay.textContent = diceValue;
+        addLog('blue', diceValue);
+    }
+    
     return diceValue;
 }
 function visualizeDice(val) {
-    const sticks = document.querySelectorAll('#dice-sticks .stick');
+    // Converte de valor do servidor (1-6) para número de paus claros
     let claros = (val === 6) ? 0 : val;
-    for(let i=0; i<4; i++) { if (i < claros) sticks[i].className='stick claro'; else sticks[i].className='stick escuro'; }
+    if (window.visualizeDiceValue) {
+        window.visualizeDiceValue(claros);
+    }
 }
 function showMessage(msg, type='info') { if(messageBar) { messageBar.textContent = msg; messageBar.className = type; } }
 
@@ -589,8 +615,12 @@ function resetDiceUI() {
     diceValue = 0;
     if(diceValueDisplay) diceValueDisplay.textContent = "-";
     if(diceMessage) diceMessage.textContent = "Clique para lançar";
-    const sticks = document.querySelectorAll('#dice-sticks .stick');
-    sticks.forEach(s => s.className='stick');
+    
+    // Limpa o canvas mostrando todos os paus no estado inicial (escuro)
+    if (window.visualizeDiceValue) {
+        window.visualizeDiceValue(0); // 0 claros = todos escuros
+    }
+    
     if(!window.isPvP) updateTurnIndicatorLocal();
 }
 

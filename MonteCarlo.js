@@ -118,17 +118,26 @@ async function handleAITurn(val) {
         for (let i = 0; i < 4; i++) {
             if (Math.random() >= 0.5) {
                 tab++;
-                if (typeof diceSticks !== 'undefined') diceSticks[i].className = 'stick claro';
-            } else {
-                if (typeof diceSticks !== 'undefined') diceSticks[i].className = 'stick escuro';
             }
         }
         val = (tab === 0) ? 6 : tab;
 
-        if (typeof diceValueDisplay !== 'undefined') diceValueDisplay.textContent = val;
-        if (typeof window.addLog === 'function') window.addLog('red', val);
+        // Reset visual antes de animar
+        if (typeof diceValueDisplay !== 'undefined') diceValueDisplay.textContent = '-';
 
-        await new Promise(r => setTimeout(r, 1000));
+        // Canvas Animation: Anima o dado de paus para o computador
+        if (window.animateDiceRoll) {
+            await window.animateDiceRoll(val, () => {
+                // Mostra valor e histórico após a animação terminar
+                if (typeof diceValueDisplay !== 'undefined') diceValueDisplay.textContent = val;
+                if (typeof window.addLog === 'function') window.addLog('red', val);
+            });
+        } else {
+            // Fallback sem canvas
+            if (typeof diceValueDisplay !== 'undefined') diceValueDisplay.textContent = val;
+            if (typeof window.addLog === 'function') window.addLog('red', val);
+            await new Promise(r => setTimeout(r, 1000));
+        }
     }
 
     const state = buildStateFromDOM();
@@ -161,7 +170,10 @@ async function handleAITurn(val) {
     } else {
         if (typeof showMessage !== 'undefined') showMessage("Sua vez (Azul)!", 'info');
         window.playerTurn = 'blue';
-        if (typeof resetDiceUI !== 'undefined') resetDiceUI();
+        // Mostra o valor durante 2 segundos antes de resetar
+        setTimeout(() => {
+            if (typeof resetDiceUI !== 'undefined') resetDiceUI();
+        }, 2000);
     }
 }
 
