@@ -1,20 +1,152 @@
 {
   "users": [
     {
-      "nick": "teste",
-      "password": "256cdc796daf11a0503f47115cfee7eb",
-      "salt": "c31ea8561895e0a134ab8cc44e9bb0bf"
-    },
-    {
       "nick": "filipe",
-      "password": "4f28ecd6fd62db4724c82bd5d9980191",
-      "salt": "8a112acdfd2173ecf42cefd32ac265b9"
+      "password": "9e5f1236a17bdb48afc3801af30649fb",
+      "salt": "d88cfb49f95c1a47276513408acb098e",
+      "games_won": 3,
+      "games_lost": 0
     },
     {
-      "nick": "a",
-      "password": "0ca8ea32a79d69d492e5029e107c4893",
-      "salt": "53ce97a6beaba3f6b0c2dd6433fc228d"
+      "nick": "test1",
+      "password": "9e5f1236a17bdb48afc3801af30649fb",
+      "salt": "d88cfb49f95c1a47276513408acb098e",
+      "games_won": 2,
+      "games_lost": 1
+    },
+    {
+      "nick": "test2",
+      "password": "9e5f1236a17bdb48afc3801af30649fb",
+      "salt": "d88cfb49f95c1a47276513408acb098e",
+      "games_won": 6,
+      "games_lost": 0
     }
   ],
-  "games": []
+  "games": [
+    {
+      "id": "a32406a5138e2f9ba44b13523352ac68",
+      "group": 35,
+      "size": 9,
+      "pieces": [
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        }
+      ],
+      "initial": "test1",
+      "turn": "test1",
+      "step": "finished",
+      "players": {
+        "test1": "Blue",
+        "test2": "Red"
+      },
+      "dice": null,
+      "winner": "test2",
+      "createdAt": "2025-12-13T14:45:51.419Z"
+    }
+  ]
 }

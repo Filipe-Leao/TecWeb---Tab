@@ -8,6 +8,7 @@ window.isPvP = false;
 // Configurações do Servidor
 const SERVER_URL = "http://twserver.alunos.dcc.fc.up.pt:8008";
 const LOCAL_SERVER_URL = "http://localhost:3000";
+const USE_LOCAL_SERVER = false;
 const GROUP_ID = 35;
 
 // Estado do Utilizador e Jogo
@@ -71,7 +72,7 @@ const btnFecharClassificacoesJogo = document.getElementById('btnFecharClassifica
 // --- 3. API ---
 async function apiRequest(endpoint, data) {
     let url;
-    if (endpoint === 'register') {
+    if (endpoint === 'register' && USE_LOCAL_SERVER) {
         url = `${LOCAL_SERVER_URL}/${endpoint}`;
     } else {
         url = `${SERVER_URL}/${endpoint}`;
@@ -208,6 +209,7 @@ function startServerEvents(id) {
 }
 
 function updateBoardFromServer(data) {
+    console.log("Server Update:", data);
     if (data.players) {
         const myColorName = data.players[userNick];
         myServerColor = myColorName ? myColorName.toLowerCase() : 'blue';
@@ -419,6 +421,7 @@ btnDesistir.addEventListener('click', async () => {
 // --- 7. RANKINGS ---
 async function updateRankingTables() {
     const result = await apiRequest('ranking', { group: GROUP_ID, size: window.BOARD_SIZE || 9 });
+    console.log("Ranking Data:", result);
     if (result && result.ranking) {
         const tbodyList = [document.querySelector('#classificacoes tbody'), document.querySelector('#classificacoesJogo tbody')];
         tbodyList.forEach(tbody => {
