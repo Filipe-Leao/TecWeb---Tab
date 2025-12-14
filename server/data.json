@@ -1,30 +1,44 @@
 {
   "users": [
     {
-      "nick": "filipe",
-      "password": "9e5f1236a17bdb48afc3801af30649fb",
-      "salt": "d88cfb49f95c1a47276513408acb098e",
-      "games_won": 3,
+      "nick": "Alice",
+      "password": "469ccbd102a6574e9b65da26abfbcc39",
+      "salt": "af7cd84e93f77bab15b757b205646f70",
+      "games_won": 2,
       "games_lost": 0
     },
     {
-      "nick": "test1",
-      "password": "9e5f1236a17bdb48afc3801af30649fb",
-      "salt": "d88cfb49f95c1a47276513408acb098e",
-      "games_won": 2,
-      "games_lost": 1
+      "nick": "Bob",
+      "password": "5f7e13100086806237f75d129800e3a7",
+      "salt": "0a26a54be8a2d566c859812b75725e9c",
+      "games_won": 0,
+      "games_lost": 2
     },
     {
-      "nick": "test2",
-      "password": "9e5f1236a17bdb48afc3801af30649fb",
-      "salt": "d88cfb49f95c1a47276513408acb098e",
-      "games_won": 6,
+      "nick": "Charlie",
+      "password": "4facafc39ffea4eb4f5fdc227269fd8c",
+      "salt": "57cb9c4a1f377dbcf9d288c5ed068ad8",
+      "games_won": 2,
+      "games_lost": 0
+    },
+    {
+      "nick": "Diana",
+      "password": "724e0e2d0f28d7aefc6193e9622338a5",
+      "salt": "904bb5dc4ffeece0c82228ac437458e4",
+      "games_won": 0,
+      "games_lost": 2
+    },
+    {
+      "nick": "Eve",
+      "password": "dbebb85a807ad1c343c903cfb5b9cf95",
+      "salt": "3fc49ba93f17efa714998b86921a3a1f",
+      "games_won": 0,
       "games_lost": 0
     }
   ],
   "games": [
     {
-      "id": "a32406a5138e2f9ba44b13523352ac68",
+      "id": "0670945b3484362192818deaa12da528",
       "group": 35,
       "size": 9,
       "pieces": [
@@ -137,16 +151,1497 @@
           "reachedLastRow": false
         }
       ],
-      "initial": "test1",
-      "turn": "test1",
-      "step": "finished",
+      "initial": "Alice",
+      "turn": "Alice",
+      "step": "roll",
       "players": {
-        "test1": "Blue",
-        "test2": "Red"
+        "Alice": "Blue",
+        "Bob": "Red"
       },
       "dice": null,
-      "winner": "test2",
-      "createdAt": "2025-12-13T14:45:51.419Z"
+      "winner": null,
+      "createdAt": "2025-12-14T23:24:43.529Z"
+    },
+    {
+      "id": "1e6d837e19f44db0488775411b5d1067",
+      "group": 35,
+      "size": 7,
+      "pieces": [
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        }
+      ],
+      "initial": "Charlie",
+      "turn": "Charlie",
+      "step": "roll",
+      "players": {
+        "Charlie": "Blue",
+        "Diana": "Red"
+      },
+      "dice": null,
+      "winner": null,
+      "createdAt": "2025-12-14T23:24:43.539Z"
+    },
+    {
+      "id": "79c6ce5e0057f36d2574b8926d19219c",
+      "group": 35,
+      "size": 9,
+      "pieces": [
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        }
+      ],
+      "initial": "Eve",
+      "turn": "Eve",
+      "step": "roll",
+      "players": {
+        "Eve": "Blue",
+        "Alice": "Red"
+      },
+      "dice": null,
+      "winner": null,
+      "createdAt": "2025-12-14T23:24:43.550Z"
+    },
+    {
+      "id": "55ade8768f74185c119615f7c62b8841",
+      "group": 35,
+      "size": 9,
+      "pieces": [
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        }
+      ],
+      "initial": "Bob",
+      "turn": "Bob",
+      "step": "roll",
+      "players": {
+        "Bob": "Blue",
+        "Eve": "Red"
+      },
+      "dice": null,
+      "winner": null,
+      "createdAt": "2025-12-14T23:26:38.451Z"
+    },
+    {
+      "id": "08463c705adf25f1c3788eca49176a56",
+      "group": 35,
+      "size": 7,
+      "pieces": [
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        }
+      ],
+      "initial": "Charlie",
+      "turn": "Charlie",
+      "step": "roll",
+      "players": {
+        "Charlie": "Blue",
+        "Diana": "Red"
+      },
+      "dice": null,
+      "winner": null,
+      "createdAt": "2025-12-14T23:26:38.456Z"
+    },
+    {
+      "id": "d5484064097bc88b7bcb0ba545d0c4b5",
+      "group": 35,
+      "size": 9,
+      "pieces": [
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        }
+      ],
+      "initial": "Alice",
+      "turn": "Alice",
+      "step": "roll",
+      "players": {
+        "Alice": "Blue",
+        "Bob": "Red"
+      },
+      "dice": null,
+      "winner": null,
+      "createdAt": "2025-12-14T23:27:47.590Z"
+    },
+    {
+      "id": "a40b2fd23bd7f4b9af4e919136c88586",
+      "group": 35,
+      "size": 7,
+      "pieces": [
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        }
+      ],
+      "initial": "Charlie",
+      "turn": "Charlie",
+      "step": "roll",
+      "players": {
+        "Charlie": "Blue",
+        "Diana": "Red"
+      },
+      "dice": null,
+      "winner": null,
+      "createdAt": "2025-12-14T23:27:47.631Z"
+    },
+    {
+      "id": "c9ffe65697dca317e29ab2cec2697e8a",
+      "group": 35,
+      "size": 9,
+      "pieces": [
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        }
+      ],
+      "initial": "Eve",
+      "turn": "Eve",
+      "step": "roll",
+      "players": {
+        "Eve": "Blue",
+        "Alice": "Red"
+      },
+      "dice": null,
+      "winner": null,
+      "createdAt": "2025-12-14T23:27:47.660Z"
+    },
+    {
+      "id": "c5c66ecc6d0d9258a40828a1ecf5344e",
+      "group": 35,
+      "size": 9,
+      "pieces": [
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        }
+      ],
+      "initial": "Bob",
+      "turn": "Bob",
+      "step": "roll",
+      "players": {
+        "Bob": "Blue",
+        "Eve": "Red"
+      },
+      "dice": null,
+      "winner": null,
+      "createdAt": "2025-12-14T23:28:53.581Z"
+    },
+    {
+      "id": "03d0c12efe62ff94eb55f059f34c83c3",
+      "group": 35,
+      "size": 7,
+      "pieces": [
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        }
+      ],
+      "initial": "Charlie",
+      "turn": "Charlie",
+      "step": "roll",
+      "players": {
+        "Charlie": "Blue",
+        "Diana": "Red"
+      },
+      "dice": null,
+      "winner": null,
+      "createdAt": "2025-12-14T23:28:53.616Z"
+    },
+    {
+      "id": "4372a57eefffbeda8f506913670eda0c",
+      "group": 35,
+      "size": 9,
+      "pieces": [
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        }
+      ],
+      "initial": "Alice",
+      "turn": "Alice",
+      "step": "finished",
+      "players": {
+        "Alice": "Blue",
+        "Bob": "Red"
+      },
+      "dice": null,
+      "winner": "Alice",
+      "createdAt": "2025-12-14T23:30:57.505Z"
+    },
+    {
+      "id": "8f67ff95423b7427caa4407bab337d3d",
+      "group": 35,
+      "size": 7,
+      "pieces": [
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        }
+      ],
+      "initial": "Charlie",
+      "turn": "Charlie",
+      "step": "finished",
+      "players": {
+        "Charlie": "Blue",
+        "Diana": "Red"
+      },
+      "dice": null,
+      "winner": "Charlie",
+      "createdAt": "2025-12-14T23:30:57.519Z"
+    },
+    {
+      "id": "b30987bbd47703b30d00eb905bb13365",
+      "group": 35,
+      "size": 9,
+      "pieces": [
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        }
+      ],
+      "initial": "Alice",
+      "turn": "Alice",
+      "step": "finished",
+      "players": {
+        "Alice": "Blue",
+        "Bob": "Red"
+      },
+      "dice": null,
+      "winner": "Alice",
+      "createdAt": "2025-12-14T23:31:12.037Z"
+    },
+    {
+      "id": "0f934f03212c4e9f07bc2317e587de69",
+      "group": 35,
+      "size": 7,
+      "pieces": [
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Blue",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        },
+        {
+          "color": "Red",
+          "inMotion": false,
+          "reachedLastRow": false
+        }
+      ],
+      "initial": "Charlie",
+      "turn": "Charlie",
+      "step": "finished",
+      "players": {
+        "Charlie": "Blue",
+        "Diana": "Red"
+      },
+      "dice": null,
+      "winner": "Charlie",
+      "createdAt": "2025-12-14T23:31:12.080Z"
     }
   ]
 }

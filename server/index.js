@@ -419,23 +419,29 @@ app.post('/leave', async (req, res) => {
 
     // Validação: argumentos obrigatórios
     if (!nick) {
+        console.log('Missing nick');
         return res.status(400).json({ error: 'Missing nick' });
     }
     if (!password) {
+        console.log('Missing password');
         return res.status(400).json({ error: 'Missing password' });
     }
     if (!game) {
+        console.log('Missing game');
         return res.status(400).json({ error: 'Missing game' });
     }
 
     // Validação: tipos
     if (typeof nick !== 'string') {
+        console.log('Invalid nick');
         return res.status(400).json({ error: 'Invalid nick' });
     }
     if (typeof password !== 'string') {
+        console.log('Invalid password');
         return res.status(400).json({ error: 'Invalid password' });
     }
     if (typeof game !== 'string') {
+        console.log('Invalid game');
         return res.status(400).json({ error: 'Invalid game' });
     }
 
@@ -445,25 +451,31 @@ app.post('/leave', async (req, res) => {
     const user = data.users.find(u => u.nick === nick);
     
     if (!user) {
+        console.log('User not registered');
         return res.status(401).json({ error: 'User not registered' });
     }
 
     const hashed = hashPassword(password, user.salt);
     if (user.password !== hashed) {
+        console.log('Invalid password');
         return res.status(401).json({ error: 'Invalid password' });
     }
 
     // Encontrar jogo
     const gameIndex = data.games.findIndex(g => g.id === game);
+    console.log('Game index found:', gameIndex);
     
     if (gameIndex === -1) {
+        console.log('Invalid game identifier');
         return res.status(404).json({ error: 'Invalid game identifier' });
     }
 
     const foundGame = data.games[gameIndex];
+    console.log('Found game:', foundGame);
 
     // Verificar se o jogador está no jogo
     if (!foundGame.players[nick]) {
+        console.log('Player not in this game');
         return res.status(403).json({ error: 'Player not in this game' });
     }
 
@@ -481,36 +493,44 @@ app.post('/leave', async (req, res) => {
     }
 
     // Caso 2: Jogo em curso (2 jogadores) - adversário ganha
-    if (foundGame.winner) {
+    if (foundGame.winner !== null) {
+        console.log('Game already finished');
         // Jogo já terminou
         return res.status(200).json({
             message: 'Game already finished',
-            game: game
+            game: game,
+            winner: foundGame.winner
         });
     }
 
     // Determinar adversário
     const opponent = Object.keys(foundGame.players).find(p => p !== nick);
 
-    // Marcar adversário como vencedor
-    foundGame.winner = opponent;
-    foundGame.step = "finished";
+    // ✅ ATUALIZAR DIRETAMENTE O JOGO NO ARRAY
+    data.games[gameIndex].winner = opponent;
+    data.games[gameIndex].step = "finished";
 
-    // Atualizar estatísticas
-    const opponentUser = data.users.find(u => u.nick === opponent);
-    const leavingUser = data.users.find(u => u.nick === nick);
+    console.log(`Player ${nick} left game ${game}, ${opponent} wins`);
+    console.log('Updated game:', data.games[gameIndex]); // Log para debug
 
-    if (opponentUser) {
-        console.log("Updating wins for", opponentUser.nick);
-        opponentUser.games_won = (opponentUser.games_won || 0) + 1;
+    // Atualizar estatísticas dos jogadores
+    const opponentUserIndex = data.users.findIndex(u => u.nick === opponent);
+    const leavingUserIndex = data.users.findIndex(u => u.nick === nick);
+
+    if (opponentUserIndex !== -1) {
+        data.users[opponentUserIndex].games_won = (data.users[opponentUserIndex].games_won || 0) + 1;
+        console.log(`${opponent} wins incremented to:`, data.users[opponentUserIndex].games_won);
     }
-    // Atualizar derrotas do jogador que saiu apenas se o adversário for encontrado
-    if (leavingUser && opponentUser) {
-        console.log("Updating losses for", leavingUser.nick);
-        leavingUser.games_lost = (leavingUser.games_lost || 0) + 1;
+    
+    if (leavingUserIndex !== -1) {
+        data.users[leavingUserIndex].games_lost = (data.users[leavingUserIndex].games_lost || 0) + 1;
+        console.log(`${nick} losses incremented to:`, data.users[leavingUserIndex].games_lost);
     }
 
+    // ✅ SALVAR TODAS AS MUDANÇAS
     await saveData(data);
+    
+    console.log('Data saved successfully');
 
     return res.status(200).json({
         message: 'Left game, opponent wins',

@@ -8,7 +8,7 @@ window.isPvP = false;
 // Configurações do Servidor
 const SERVER_URL = "http://twserver.alunos.dcc.fc.up.pt:8008";
 const LOCAL_SERVER_URL = "http://localhost:3000";
-const USE_LOCAL_SERVER = false;
+const USE_LOCAL_SERVER = true;
 const GROUP_ID = 35; // O teu ID de grupo
 
 // Estado do Utilizador e Jogo
@@ -72,7 +72,8 @@ const btnFecharClassificacoesJogo = document.getElementById('btnFecharClassifica
 // --- 3. API ---
 async function apiRequest(endpoint, data) {
     let url;
-    if (endpoint === 'register' && USE_LOCAL_SERVER) {
+    if ((endpoint === 'register' || endpoint === 'ranking') && USE_LOCAL_SERVER) {
+        console.log("Using data", data);
         url = `${LOCAL_SERVER_URL}/${endpoint}`;
     } else {
         url = `${SERVER_URL}/${endpoint}`;
@@ -484,11 +485,12 @@ btnDesistir.addEventListener('click', async () => {
 
 // --- 7. RANKINGS ---
 async function updateRankingTables() {
-    if (!window.isPvP) {
+    if (!window.isPvP && !USE_LOCAL_SERVER) {
         if(window.updateLocalScoresDisplay) window.updateLocalScoresDisplay();
         return;
     }
     const result = await apiRequest('ranking', { group: GROUP_ID, size: window.BOARD_SIZE || 9 });
+    console.log("Ranking Result:", result);
     if (result && result.ranking) {
         const tbodyList = [document.querySelector('#classificacoes tbody'), document.querySelector('#classificacoesJogo tbody')];
         tbodyList.forEach(tbody => {
