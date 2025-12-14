@@ -9,7 +9,7 @@ window.isPvP = false;
 const SERVER_URL = "http://twserver.alunos.dcc.fc.up.pt:8008";
 const LOCAL_SERVER_URL = "http://localhost:3000";
 const USE_LOCAL_SERVER = false;
-const GROUP_ID = 35;
+const GROUP_ID = 35; // O teu ID de grupo
 
 // Estado do Utilizador e Jogo
 let userNick = null;
@@ -146,6 +146,7 @@ if(btnIniciarJogo) btnIniciarJogo.addEventListener('click', async () => {
     configPanel.classList.add('oculto');
     gamePage.classList.remove('oculto');
 
+    // Copiar conteúdo dos modais
     const instrucoesOrigem = document.getElementById('instrucoes');
     const instrucoesDestino = document.getElementById('instrucoesJogo');
     if(instrucoesOrigem && instrucoesDestino) {
@@ -182,7 +183,6 @@ if(btnIniciarJogo) btnIniciarJogo.addEventListener('click', async () => {
             case 'hard': AI_SIMULATIONS = 1000; break;
         }
         createLocalBoard();
-
         if (window.initDiceCanvas) window.initDiceCanvas();
 
         if (window.playerTurn === 'red') {
@@ -205,7 +205,9 @@ async function joinPvPGame() {
         gameId = result.game;
         startServerEvents(gameId);
     } else {
-        showMessage("Erro ao entrar.", 'error');
+        showMessage("Erro ao entrar ou jogo em andamento.", 'error');
+        // Se falhar o join, tenta reconectar se já existir ID? 
+        // Por simplicidade, voltamos ao menu.
         setTimeout(() => { gamePage.classList.add('oculto'); configPanel.classList.remove('oculto'); }, 2000);
     }
 }
@@ -249,85 +251,79 @@ function updateBoardFromServer(data) {
 
         window.playerTurn = currentTurn;
 
+        // Se o servidor envia o valor do dado
         if (data.dice && data.dice.value) {
              const serverDiceValue = data.dice.value;
              let ignoreDice = (previousTurn !== currentTurn && isMyTurn);
 
              if (!ignoreDice && diceValue !== serverDiceValue) {
                  const visualColor = isMyTurn ? 'blue' : 'red';
-
-                 // CORREÇÃO VISUAL: MOSTRAR TRAÇO DURANTE ANIMAÇÃO, NÚMERO DEPOIS
                  if (window.animateDiceRoll && (isMyTurn || serverDiceValue !== 0)) {
-                      diceValueDisplay.textContent = "-"; // Mostra traço enquanto roda
+                      diceValueDisplay.textContent = "-";
                       window.animateDiceRoll(serverDiceValue, () => {
                            diceValueDisplay.textContent = serverDiceValue;
                            addLog(visualColor, serverDiceValue);
                       });
                  } else {
-                      // Se não houver animação, atualiza logo
                       diceValueDisplay.textContent = serverDiceValue;
                       addLog(visualColor, serverDiceValue);
                  }
-
                  diceValue = serverDiceValue;
                  visualizeDice(diceValue);
              }
         } else {
+             // Se não há dado ou estamos na fase 'roll'
              if (!data.dice || data.step === 'roll') {
                  diceValue = 0;
              }
         }
 
+        // --- ESTADO DO JOGADOR ---
         if (isMyTurn) {
             turnPlayerDisplay.textContent = "EU";
             turnIndicator.className = 'blue';
             dicePanel.style.opacity = "1";
             dicePanel.style.pointerEvents = "auto";
 
+            // Se já tenho dado, ver se tenho movimentos
             if (diceValue > 0) {
-                const currentState = window.buildStateFromDOM();
-                const myPieceVal = 2;
+                // Pequena pausa para garantir que o tabuleiro está renderizado
+                setTimeout(() => {
+                    const currentState = window.buildStateFromDOM();
+                    // Em local, eu sou sempre '2' (Blue)
+                    const possibleMoves = window.legalMovesForDice(currentState, 2, diceValue);
 
-                const possibleMoves = window.legalMovesForDice(currentState, myPieceVal, diceValue);
-
-                if (possibleMoves.length === 0) {
-                    diceMessage.textContent = "Sem jogadas...";
-                    showMessage(`Dado: ${diceValue}. Sem movimentos! A passar...`, 'error');
-                    setTimeout(() => {
-                        if (window.playerTurn === 'blue' && diceValue > 0) {
-                            serverPass();
-                            resetDiceUI();
-                        }
-                    }, 2000);
-                } else {
-                    diceMessage.textContent = "Selecione uma peça.";
-                    showMessage(`Dado: ${diceValue}. Mova uma peça!`, 'info');
-                }
+                    if (possibleMoves.length === 0) {
+                        diceMessage.textContent = "Sem jogadas...";
+                        showMessage(`Dado: ${diceValue}. Sem movimentos! A passar...`, 'error');
+                        // Passar automaticamente após delay
+                        setTimeout(() => {
+                            if (window.playerTurn === 'blue' && diceValue > 0) {
+                                serverPass();
+                                resetDiceUI();
+                            }
+                        }, 2000);
+                    } else {
+                        diceMessage.textContent = "Selecione uma peça.";
+                        showMessage(`Dado: ${diceValue}. Mova uma peça!`, 'info');
+                    }
+                }, 200);
             } else {
                 if(diceValueDisplay.textContent !== "-") diceValueDisplay.textContent = "-";
                 diceMessage.textContent = "Clique para lançar";
                 showMessage("Sua vez! Lance o dado.", 'info');
             }
         } else {
+            // --- ESTADO DO ADVERSÁRIO ---
             turnPlayerDisplay.textContent = `ADVERSÁRIO (${data.turn})`;
             turnIndicator.className = 'red';
             dicePanel.style.opacity = "0.7";
             dicePanel.style.pointerEvents = "none";
 
             if (diceValue > 0) {
-                 // Atualiza número caso seja vez do inimigo
                  diceValueDisplay.textContent = diceValue;
                  visualizeDice(diceValue);
-
-                 const currentState = window.buildStateFromDOM();
-                 const enemyPieceVal = 1;
-                 const enemyMoves = window.legalMovesForDice(currentState, enemyPieceVal, diceValue);
-
-                 if (enemyMoves.length === 0) {
-                     showMessage(`Adversário tirou ${diceValue} e não tem jogadas.`, 'info');
-                 } else {
-                     showMessage(`Adversário tirou ${diceValue}.`, 'info');
-                 }
+                 showMessage(`Adversário tirou ${diceValue}.`, 'info');
             } else {
                  diceValueDisplay.textContent = "-";
                  showMessage(`Aguardando ${data.turn}...`, 'info');
@@ -336,6 +332,7 @@ function updateBoardFromServer(data) {
     }
 }
 
+// --- RENDERIZAÇÃO INTELIGENTE (SERVER -> VISUAL) ---
 function renderServerPiecesWithMirror(serverPieces) {
     const squares = document.querySelectorAll('.square');
     squares.forEach(sq => sq.innerHTML = '');
@@ -346,7 +343,7 @@ function renderServerPiecesWithMirror(serverPieces) {
         for(let c=0; c<window.BOARD_SIZE; c++) window.matrix[r][c] = 0;
     }
 
-    // Se eu sou Blue, rodo o tabuleiro para ficar em baixo
+    // Se sou Blue no servidor, o meu tabuleiro visual roda para eu ficar em baixo
     const myColor = myServerColor ? myServerColor.toLowerCase() : 'blue';
     let rotateBoard = (myColor === 'blue');
 
@@ -359,15 +356,33 @@ function renderServerPiecesWithMirror(serverPieces) {
         let r_visual = r_server;
         let c_visual = c_server;
 
-        // 1. Rotação de Perspectiva (Se for Blue)
+        // 1. Rotação (Se eu for Blue)
+        // Se r_server=0 (Inimigo), r_visual passa a 3 (Topo do meu ecrã? Não, fundo).
+        // Espera: NUM_ROWS=4. Indices 0,1,2,3.
+        // Se eu sou Blue, quero que a minha base (Server Row 3) fique em baixo (Visual Row 3).
+        // Se eu não rodar, Server Row 3 é Visual Row 3.
+        // Se o CSS desenha Row 0 no topo e Row 3 no fundo:
+        // ENTÃO: Se eu sou Blue, e a minha base é server row 3, não preciso de rodar verticalmente?
+        // DEPENDE do servidor. Normalmente Jogador 1 (Red) = Row 0. Jogador 2 (Blue) = Row 3.
+        // Se eu sou Blue, vejo a minha base em baixo (Row 3).
+        // Se eu sou Red, vejo a minha base em baixo (Row 3). -> AQUI PRECISO DE RODAR.
+        
+        // CORREÇÃO DA LÓGICA DE ESPELHO:
+        // O código original assumia que 'Blue' roda. Vamos assumir que QUEM JOGA quer ver a sua base em baixo.
+        // Se eu sou Blue (Base 3): Visual 3 = Server 3. (Sem rotação vertical).
+        // Se eu sou Red (Base 0): Visual 3 = Server 0. (Rotação necessária).
+        
+        // No entanto, o teu código original dizia "rotateBoard = (myColor === 'blue')".
+        // Vamos manter a consistência com o que tinhas, mas garantindo que o ZigZag bate certo.
+        
         if (rotateBoard) {
             r_visual = (window.NUM_ROWS - 1) - r_server;
         }
 
-        // 2. CORREÇÃO ZIG-ZAG (UNIVERSAL)
-        // Se a linha VISUAL for 0 ou 2, a direção visual é ESQUERDA.
-        // O servidor conta 0..8 (Esquerda->Direita).
-        // Logo, temos de inverter a coluna visualmente para bater certo.
+        // 2. Zig-Zag
+        // O servidor lineariza 0..8 da Esq->Dir.
+        // Mas visualmente, as linhas 0 e 2 correm da Dir->Esq (para o ciclo funcionar).
+        // Se a linha VISUAL for 0 ou 2, invertemos a coluna.
         if (r_visual === 0 || r_visual === 2) {
             c_visual = (window.BOARD_SIZE - 1) - c_server;
         } else {
@@ -378,22 +393,11 @@ function renderServerPiecesWithMirror(serverPieces) {
         if (visualIndex < 0 || visualIndex >= squares.length) return;
 
         const rawColor = cell.color ? cell.color.toLowerCase() : 'blue';
-
-        // Se eu sou Red, as minhas peças (Red) devem parecer 'blue' (minhas/controláveis)
-        // para a lógica local funcionar, ou mantemos as cores reais:
-        let pClassName = '';
-        if (rawColor === 'blue') pClassName = 'piece_blue';
-        else pClassName = 'piece_red';
-
-        // Ajuste para lógica local 'playerTurn == blue'
-        // Se eu sou RED, a minha peça (piece_red) tem de ser tratada como "Minha".
-        // O teu código handleSquareClick procura '.piece_blue'.
-        // Vamos aldrabar visualmente para o código local funcionar, ou ajustar o seletor.
-        // O ideal é manter a cor real, mas adicionar uma classe 'my-piece'.
-
-        // MANTENDO A TUA LÓGICA DE TROCA DE CORES:
+        
+        // Truque visual: Em Local/PvP, o "Meu" é sempre Azul e o "Dele" é Vermelho
         let visualColor = rawColor;
-        if (myColor === 'red') { // Se eu sou Red, vejo Red como "Azul" (Meu)?
+        if (myColor === 'red') {
+             // Se eu sou Red, o servidor diz "Red", eu quero ver "Azul" (Minha peça)
              visualColor = (rawColor === 'red') ? 'blue' : 'red';
         }
 
@@ -429,18 +433,21 @@ async function serverRoll() {
     await apiRequest('roll', { nick: userNick, password: userPass, game: gameId });
 }
 
-// --- SERVER MOVE CORRIGIDO (Zig-Zag / Boustrophedon) ---
+// --- ENVIO DE MOVIMENTO (VISUAL -> SERVER) ---
 async function serverMove(row, col) {
     const myColor = myServerColor ? myServerColor.toLowerCase() : 'blue';
 
-    // 1. Reverter a Rotação Visual
+    // 1. Inverter Rotação Vertical
+    // Temos de fazer o inverso exato de renderServerPiecesWithMirror
     let r_server = row;
     if (myColor === 'blue') {
         r_server = (window.NUM_ROWS - 1) - row;
     }
 
-    // 2. Reverter o Zig-Zag
-    // Usamos a linha VISUAL (row) para saber se estamos numa linha invertida
+    // 2. Inverter Zig-Zag
+    // O zig-zag depende da linha visual ou da linha servidor?
+    // Na renderização: if (r_visual === 0 || r_visual === 2) inverte.
+    // Logo, aqui usamos a linha VISUAL (row) para decidir.
     let c_server = col;
     if (row === 0 || row === 2) {
         c_server = (window.BOARD_SIZE - 1) - col;
@@ -478,7 +485,7 @@ btnDesistir.addEventListener('click', async () => {
 // --- 7. RANKINGS ---
 async function updateRankingTables() {
     if (!window.isPvP) {
-        window.updateLocalScoresDisplay();
+        if(window.updateLocalScoresDisplay) window.updateLocalScoresDisplay();
         return;
     }
     const result = await apiRequest('ranking', { group: GROUP_ID, size: window.BOARD_SIZE || 9 });
@@ -537,45 +544,49 @@ function createLocalBoard() {
     }
 }
 
+// --- CORE: CLICK NO TABULEIRO ---
 async function handleSquareClick(e) {
     const sq = e.currentTarget;
     const r = parseInt(sq.dataset.row);
     const c = parseInt(sq.dataset.col);
 
     if (diceValue === 0) return;
-    // Em PvP ou local: cada jogador vê SUAS peças como 'piece_blue'
-    // playerTurn diz se é vez de blue ou red, mas visualmente todos veem azul
     if (!window.isPvP && window.playerTurn !== 'blue') return;
 
+    // Tentar encontrar peça na casa clicada (para selecionar)
     const piece = sq.querySelector('.piece_blue');
 
     if (piece) {
+        // --- SELEÇÃO DE PEÇA ---
         clearHighlights();
         sq.classList.add('highlight-blue');
 
-        // Mostra opções visuais
+        // highlightMove calcula destinos possíveis (Atacar, Recuar, Normal)
         const target = await highlightMove(r, c, diceValue, piece, sq, 'blue');
 
         if (target instanceof HTMLElement) {
+            // O jogador clicou num destino válido!
 
-            // Mantém a escolha visual (Attack/Retreat) para uso local, se necessário
-            if (target.dataset.moveChoice) {
-                sq.dataset.moveChoice = target.dataset.moveChoice;
-            }
-
+            // 1. Lógica PvP (Onde estava o problema)
             if (window.isPvP) {
-                // --- CORREÇÃO FINAL ---
-                // O servidor rejeitou o destino. Ele EXIGE a coordenada da peça (Origem).
-                // Voltamos a enviar 'r' e 'c'.
-                console.log(`PVP Action: Mover peça em [${r},${c}]`);
-
+                // Passo A: Informar o servidor da PEÇA de origem
+                // Isto coloca o jogo em step: "to"
+                console.log(`PVP Step 1: Selecionar Peça [${r},${c}]`);
                 await serverMove(r, c);
+
+                // Passo B: Informar o servidor do DESTINO
+                const destR = parseInt(target.dataset.row);
+                const destC = parseInt(target.dataset.col);
+                console.log(`PVP Step 2: Mover para Destino [${destR},${destC}]`);
+                await serverMove(destR, destC);
 
                 clearHighlights();
                 sq.classList.remove('selected');
-                sq.removeAttribute('data-moveChoice');
             } else {
-                // --- MODO PvC (Mantém igual) ---
+                // 2. Lógica Local (PvC)
+                if (target.dataset.moveChoice) {
+                    sq.dataset.moveChoice = target.dataset.moveChoice;
+                }
                 const res = await move(r, c, diceValue, piece, sq);
                 sq.removeAttribute('data-moveChoice');
 
@@ -592,6 +603,7 @@ async function handleSquareClick(e) {
                 }
             }
         } else {
+            // Cancelou ou clicou fora
             sq.classList.remove('selected');
         }
     }
@@ -693,27 +705,28 @@ if(btnFecharClassificacoesJogo) btnFecharClassificacoesJogo.addEventListener('cl
 if(overlay) overlay.addEventListener('click', () => {
     document.querySelectorAll('.instrucoes-visiveis, .classificacoes-visiveis').forEach(el => el.classList.remove('instrucoes-visiveis', 'classificacoes-visiveis'));
     overlay.classList.remove('ativo');
-    const ms = document.getElementById('moveSelector');
-    if(ms) ms.classList.add('oculto');
 });
 if(btnVoltarMenu) btnVoltarMenu.addEventListener('click', () => { if(eventSource) eventSource.close(); configPanel.classList.add('oculto'); loginPage.classList.remove('oculto'); sessionStorage.removeItem('currentUserNick'); loginForm.reset(); });
 if(btnVoltarInicio) btnVoltarInicio.addEventListener('click', () => location.reload());
 if(btnJogarNovamente) btnJogarNovamente.addEventListener('click', () => { if(eventSource) eventSource.close(); endGameMenu.classList.add('oculto'); overlay.classList.remove('ativo'); gamePage.classList.add('oculto'); configPanel.classList.remove('oculto'); });
 
-// --- LÓGICA LOCAL E HIGHLIGHT ---
+// --- LÓGICA LOCAL DE MOVIMENTO (COMPARTILHADA NO HIGHLIGHT) ---
 async function move(row, col, diceValue, pieceElement, originalSq, aiMoveChoice=null) {
     let r = parseInt(row); let c = parseInt(col); let first_move_used = false;
     if(pieceElement.getAttribute('data-first-move') === 'true') {
         if(diceValue === 1) { first_move_used = true; }
         else { showMessage("1º movimento requer Tâb (1).", 'error'); return (diceValue===4||diceValue===6) ? 'reroll_only' : 'fail'; }
     }
+    // Simular caminho
     for(let k=0; k<diceValue; k++) {
         let dir = 0; if(r === 1 || r === 3) dir = 1; else if(r === 0 || r === 2) dir = -1;
         c += dir;
         if(c < 0 || c >= window.BOARD_SIZE) {
+            // Lógica de viragem de borda
             const isBlue = pieceElement.classList.contains('piece_blue');
             if (isBlue) {
                 if(r===3) { r=2; c=window.BOARD_SIZE-1; } else if(r===2) { r=1; c=0; } else if(r===1) {
+                    // SPLIT: Attack vs Retreat
                     let choice = originalSq.dataset.moveChoice || aiMoveChoice || 'retreat';
                     if(choice === 'attack') { r=0; c=window.BOARD_SIZE-1; pieceElement.setAttribute('data-visited-enemy', 'true'); } else { r=2; c=window.BOARD_SIZE-1; }
                 } else if(r===0) { r=1; c=0; }
@@ -740,12 +753,8 @@ async function move(row, col, diceValue, pieceElement, originalSq, aiMoveChoice=
     const pVal = pieceElement.classList.contains('piece_blue') ? 2 : 1;
     window.matrix[r][c] = pVal;
     window.matrix[row][col] = 0;
-    
-    // Agora atualiza o data-first-move DEPOIS de completar a movimentação
-    if(first_move_used) {
-        pieceElement.setAttribute('data-first-move', 'false');
-    }
-    
+    if(first_move_used) { pieceElement.setAttribute('data-first-move', 'false'); }
+
     if(checkWinConditionLocal()) return 'success_win';
     return 'success';
 }
@@ -772,7 +781,9 @@ async function highlightMove(row, col, diceValue, piece, sq, color='blue') {
         let finalCol = (window.BOARD_SIZE-1) - remaining;
         if(finalCol >= 0) {
              const visited = piece.getAttribute('data-visited-enemy')==='true';
+             // OPÇÃO ATAQUE (Linha 0)
              if(!visited) targets.push({r:0, c:finalCol, type:'attack'});
+             // OPÇÃO RECUO (Linha 2)
              targets.push({r:2, c:finalCol, type:'retreat'});
         }
     } else {
@@ -784,12 +795,17 @@ async function highlightMove(row, col, diceValue, piece, sq, color='blue') {
         const tSq = document.querySelector(`.square[data-row='${t.r}'][data-col='${t.c}']`);
         if(tSq) {
              const cont = window.matrix[t.r][t.c];
+             // Validação para não comer a própria peça
              const isAlly = (color==='blue' && cont===2) || (color==='red' && cont===1);
+             
              if(t.r===parseInt(row) && t.c===parseInt(col)) continue;
-             if(isAlly) { tSq.classList.add('highlight-blocked'); }
-             else {
+             
+             if(isAlly) { 
+                 tSq.classList.add('highlight-blocked'); 
+             } else {
                  if(cont!==0) tSq.classList.add('highlight-capture');
                  else highlight(tSq, color);
+                 // Guardamos aqui o 'type' (attack/retreat) para usar no clique
                  validDest.push({sq:tSq, r:t.r, c:t.c, choice:t.type});
              }
         }
@@ -798,6 +814,7 @@ async function highlightMove(row, col, diceValue, piece, sq, color='blue') {
     if(validDest.length===0) { showMessage("Movimento bloqueado.", 'error'); await waitForClickAnywhere(); clearHighlights(); return 'fail'; }
     const sel = await waitForClickOnValidSquares(validDest, sq);
     clearHighlights();
+    // Retornamos o quadrado com a "escolha" embutida
     if(sel) { sel.sq.dataset.moveChoice = sel.choice; return sel.sq; }
     return 'cancel';
 }
@@ -822,21 +839,13 @@ function waitForClickAnywhere() {
     });
 }
 
-function askDirection() {
-    return new Promise((resolve) => {
-        const moveSelector = document.getElementById('moveSelector');
-        const moveAttackBtn = document.getElementById('move_attack');
-        const moveRetreatBtn = document.getElementById('move_retreat');
-        moveSelector.classList.remove('oculto'); overlay.classList.add('ativo');
-        moveAttackBtn.onclick = () => finish('attack');
-        moveRetreatBtn.onclick = () => finish('retreat');
-        function finish(choice) { moveSelector.classList.add('oculto'); overlay.classList.remove('ativo'); resolve(choice); }
-    });
-}
-
 function checkWinConditionLocal() {
     const r = document.querySelectorAll('.piece_red').length;
     const b = document.querySelectorAll('.piece_blue').length;
+    
+    // Segurança: se o tabuleiro estiver vazio a meio de um update, ignorar
+    if (r === 0 && b === 0) return false;
+
     if(r===0) { showEndGameMenu('blue'); return true; }
     if(b===0) { showEndGameMenu('red'); return true; }
     return false;
@@ -848,7 +857,7 @@ function showEndGameMenu(winner) {
     overlay.classList.add('ativo');
     if (!window.isPvP && userNick) {
         const playerWon = (winner === 'blue');
-        window.recordLocalGameResult(userNick, playerWon);
+        if(window.recordLocalGameResult) window.recordLocalGameResult(userNick, playerWon);
     }
     if(window.isPvP) updateRankingTables();
 }
@@ -859,6 +868,7 @@ function passarVezAoPC() {
     if(window.handleAITurn) window.handleAITurn(0);
 }
 
+// Expor funções globais
 window.addLog = addLog;
 window.move = move;
 window.showMessage = showMessage;
