@@ -426,6 +426,13 @@ btnDesistir.addEventListener('click', async () => {
 
 // --- 7. RANKINGS ---
 async function updateRankingTables() {
+    // Se estamos em modo PvC, mostra as classificações locais
+    if (!window.isPvP) {
+        window.updateLocalScoresDisplay();
+        return;
+    }
+    
+    // Modo PvP: obtém classificações do servidor
     const result = await apiRequest('ranking', { group: GROUP_ID, size: window.BOARD_SIZE || 9 });
     console.log("Ranking Data:", result);
     if (result && result.ranking) {
@@ -451,7 +458,12 @@ function createEmptyBoard() {
         for(let c=0; c<window.BOARD_SIZE; c++) {
             const sq = document.createElement('div');
             sq.className = 'square';
-            sq.dataset.row = r; sq.dataset.col = c;
+            sq.dataset.row = r;
+            sq.dataset.col = c;
+            // Marca a última coluna para as setas especiais
+            if (c === window.BOARD_SIZE - 1) {
+                sq.dataset.lastCol = 'true';
+            }
             sq.addEventListener('click', handleSquareClick);
             boardElement.appendChild(sq);
         }
@@ -758,7 +770,17 @@ function showEndGameMenu(winner) {
     endGameMessage.textContent = (winner==='blue') ? "GANHOU!" : "PERDEU!";
     endGameMenu.classList.remove('oculto');
     overlay.classList.add('ativo');
-    if(window.isPvP) updateRankingTables();
+    
+    // WebStorage: Guarda o resultado em modo PvC
+    if (!window.isPvP && userNick) {
+        const playerWon = (winner === 'blue');
+        window.recordLocalGameResult(userNick, playerWon);
+    }
+    
+    // Atualiza classificações
+    if(window.isPvP) {
+        updateRankingTables();
+    }
 }
 
 function passarVezAoPC() {

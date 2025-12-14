@@ -114,6 +114,11 @@ async function handleAITurn(val) {
     if (val === undefined || val === null) val = 0;
 
     if (val === 0) {
+        // Limpa highlights do turno anterior
+        if (typeof window.clearHighlights === 'function') {
+            window.clearHighlights();
+        }
+        
         let tab = 0;
         for (let i = 0; i < 4; i++) {
             if (Math.random() >= 0.5) {
@@ -148,9 +153,12 @@ async function handleAITurn(val) {
         if (val === 1 || val === 4 || val === 6) {
             setTimeout(() => handleAITurn(0), 2000);
         } else {
-            if (typeof window.playerTurn !== 'undefined') window.playerTurn = 'blue';
-            if (typeof resetDiceUI !== 'undefined') resetDiceUI();
-            if (typeof showMessage !== 'undefined') showMessage("Sua vez (Azul)!", 'info');
+            // Mostra o valor durante 2 segundos antes de mudar de jogador (mesmo quando não há movimentos)
+            setTimeout(() => {
+                if (typeof window.playerTurn !== 'undefined') window.playerTurn = 'blue';
+                if (typeof resetDiceUI !== 'undefined') resetDiceUI();
+                if (typeof showMessage !== 'undefined') showMessage("Sua vez (Azul)!", 'info');
+            }, 2000);
         }
         return;
     }

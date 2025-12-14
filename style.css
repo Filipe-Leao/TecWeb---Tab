@@ -400,7 +400,7 @@ body {
 
 /* Linha 3: primeira casa com seta para direita */
 .square[data-row="3"][data-col="0"]::before {
-    content: '→';
+    content: '↘';
 }
 
 /* Linha 3: última casa com seta diagonal para cima-direita */
