@@ -256,17 +256,20 @@ function updateBoardFromServer(data) {
              if (!ignoreDice && diceValue !== serverDiceValue) {
                  const visualColor = isMyTurn ? 'blue' : 'red';
 
-                 // CORREÇÃO VISUAL: MOSTRAR NÚMERO DEPOIS DA ANIMAÇÃO
+                 // CORREÇÃO VISUAL: MOSTRAR TRAÇO DURANTE ANIMAÇÃO, NÚMERO DEPOIS
                  if (window.animateDiceRoll && (isMyTurn || serverDiceValue !== 0)) {
+                      diceValueDisplay.textContent = "-"; // Mostra traço enquanto roda
                       window.animateDiceRoll(serverDiceValue, () => {
                            diceValueDisplay.textContent = serverDiceValue;
+                           addLog(visualColor, serverDiceValue);
                       });
+                 } else {
+                      // Se não houver animação, atualiza logo
+                      diceValueDisplay.textContent = serverDiceValue;
+                      addLog(visualColor, serverDiceValue);
                  }
 
-                 addLog(visualColor, serverDiceValue);
                  diceValue = serverDiceValue;
-                 // Se não houver animação, atualiza logo
-                 if(!window.animateDiceRoll) diceValueDisplay.textContent = diceValue;
                  visualizeDice(diceValue);
              }
         } else {
@@ -539,8 +542,10 @@ async function handleSquareClick(e) {
     const r = parseInt(sq.dataset.row);
     const c = parseInt(sq.dataset.col);
 
-    if (window.playerTurn !== 'blue') return;
     if (diceValue === 0) return;
+    // Em PvP ou local: cada jogador vê SUAS peças como 'piece_blue'
+    // playerTurn diz se é vez de blue ou red, mas visualmente todos veem azul
+    if (!window.isPvP && window.playerTurn !== 'blue') return;
 
     const piece = sq.querySelector('.piece_blue');
 
@@ -699,7 +704,7 @@ if(btnJogarNovamente) btnJogarNovamente.addEventListener('click', () => { if(eve
 async function move(row, col, diceValue, pieceElement, originalSq, aiMoveChoice=null) {
     let r = parseInt(row); let c = parseInt(col); let first_move_used = false;
     if(pieceElement.getAttribute('data-first-move') === 'true') {
-        if(diceValue === 1) { first_move_used = true; pieceElement.setAttribute('data-first-move', 'false'); }
+        if(diceValue === 1) { first_move_used = true; }
         else { showMessage("1º movimento requer Tâb (1).", 'error'); return (diceValue===4||diceValue===6) ? 'reroll_only' : 'fail'; }
     }
     for(let k=0; k<diceValue; k++) {
@@ -735,6 +740,12 @@ async function move(row, col, diceValue, pieceElement, originalSq, aiMoveChoice=
     const pVal = pieceElement.classList.contains('piece_blue') ? 2 : 1;
     window.matrix[r][c] = pVal;
     window.matrix[row][col] = 0;
+    
+    // Agora atualiza o data-first-move DEPOIS de completar a movimentação
+    if(first_move_used) {
+        pieceElement.setAttribute('data-first-move', 'false');
+    }
+    
     if(checkWinConditionLocal()) return 'success_win';
     return 'success';
 }
