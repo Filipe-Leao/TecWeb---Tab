@@ -1155,3 +1155,36 @@ body {
 .board-rotated .square::before {
     display: none !important;
 }
+
+/* Cor para quando consegues "comer" (Captura) - Verde/Dourado */
+.square.highlight-capture {
+    background-color: rgba(255, 215, 0, 0.6) !important;
+    border-color: #ff8c00 !important;
+    box-shadow: 0 0 15px rgba(255, 140, 0, 0.8);
+    cursor: pointer;
+    animation: pulseCapture 1.5s infinite;
+}
+
+/* Cor para movimento bloqueado por peça amiga - Cinzento/Vermelho */
+.square.highlight-blocked {
+    background-color: rgba(128, 128, 128, 0.5) !important;
+    border-color: #555 !important;
+    cursor: not-allowed;
+    position: relative;
+}
+
+/* Um X visual para reforçar que está bloqueado */
+.square.highlight-blocked::after {
+    content: '✖';
+    color: #5a0000;
+    font-weight: bold;
+    font-size: 20px;
+    position: absolute;
+    opacity: 0.7;
+}
+
+@keyframes pulseCapture {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
