@@ -34,6 +34,20 @@
       "salt": "3fc49ba93f17efa714998b86921a3a1f",
       "games_won": 0,
       "games_lost": 0
+    },
+    {
+      "nick": "filipe",
+      "password": "f3e2f4f366299266b172f7f13a8fe72e",
+      "salt": "68603641e9d9c03ccbdd6786b900a51f",
+      "games_won": 0,
+      "games_lost": 0
+    },
+    {
+      "nick": "a",
+      "password": "3002e041fa87c5dd080fd0d80707fd33",
+      "salt": "c609551317b3f5e76b995876cf14872e",
+      "games_won": 0,
+      "games_lost": 0
     }
   ],
   "games": [

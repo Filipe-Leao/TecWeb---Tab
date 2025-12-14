@@ -7,7 +7,7 @@ window.isPvP = false;
 
 // Configurações do Servidor
 const SERVER_URL = "http://twserver.alunos.dcc.fc.up.pt:8008";
-const LOCAL_SERVER_URL = "http://localhost:3000";
+const LOCAL_SERVER_URL = "http://twserver.alunos.dcc.fc.up.pt:8135";
 const USE_LOCAL_SERVER = true;
 const GROUP_ID = 35; // O teu ID de grupo
 
