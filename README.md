@@ -49,7 +49,7 @@ npm start
 
 ### 5. Jogar
 Abra o seu navegador e aceda a:
-👉 **http://localhost:8135**
+👉 **firefox index.html**
 
 > **Nota:** Para testar o modo Multiplayer localmente, abra o jogo em duas janelas diferentes e faça login com utilizadores diferentes.
 
@@ -59,9 +59,8 @@ Abra o seu navegador e aceda a:
 
 ```text
 TecWeb---Tab/
-├── server/
-│   ├── index.js          # Lógica principal do servidor (Rotas, Regras, SSE)
-│   └── data.json         # Base de dados (Utilizadores e Jogos)
+├── index.js              # Lógica principal do servidor (Rotas, Regras, SSE)
+├── data.json             # Base de dados (Utilizadores e Jogos)
 ├── index.html            # Interface do jogo
 ├── style.css             # Estilos
 ├── script.js             # Comunicação com a API e gestão de UI

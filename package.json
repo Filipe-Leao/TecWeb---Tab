@@ -4,8 +4,8 @@
   "description": "You need to have the database running locally.",
   "main": "MonteCarlo.js",
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "node --watch server/index.js",
+    "start": "node index.js",
+    "dev": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

@@ -9,7 +9,12 @@ window.isPvP = false;
 const GROUP_ID = 35;
 
 // Deteta automaticamente se estás no teu PC (localhost) ou na faculdade
-const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+const isLocal = (() => {
+    const h = window.location.hostname;
+    return h === 'localhost' || h === '127.0.0.1' || h === '' || h === '::1' || h.startsWith('192.168.') || h.startsWith('10.');
+})();
+
+console.log(`Servidor: ${isLocal ? 'Localhost' : 'Faculdade'}`);
 
 // Define o URL correto automaticamente
 const SERVER_URL = isLocal
