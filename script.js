@@ -6,10 +6,19 @@ window.matrix = null;
 window.isPvP = false;
 
 // Configurações do Servidor
-const SERVER_URL = "http://twserver.alunos.dcc.fc.up.pt:8008";
-const LOCAL_SERVER_URL = "http://twserver.alunos.dcc.fc.up.pt:8135";
-const USE_LOCAL_SERVER = false;
-const GROUP_ID = 35; // O teu ID de grupo
+const GROUP_ID = 35;
+
+// Deteta automaticamente se estás no teu PC (localhost) ou na faculdade
+const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
+// Define o URL correto automaticamente
+const SERVER_URL = isLocal
+    ? "http://localhost:8135"                    // Locahost
+    : "http://twserver.alunos.dcc.fc.up.pt:8135"; // Na Faculdade
+
+// Estas variáveis garantem que o resto do código usa o URL certo
+const LOCAL_SERVER_URL = SERVER_URL;
+const USE_LOCAL_SERVER = true; // Forçamos a usar sempre o nosso servidor
 
 // Estado do Utilizador e Jogo
 let userNick = null;
@@ -71,15 +80,10 @@ const btnFecharClassificacoesJogo = document.getElementById('btnFecharClassifica
 
 // --- 3. API ---
 async function apiRequest(endpoint, data) {
-    let url;
+    const url = `${SERVER_URL}/${endpoint}`;
 
-    if (USE_LOCAL_SERVER) {
-    //if ((endpoint === 'register' || endpoint === 'ranking') && USE_LOCAL_SERVER) {
-        console.log("Connecting to endpoint:", endpoint,"Using data:", data);
-        url = `${LOCAL_SERVER_URL}/${endpoint}`;
-    } else {
-        url = `${SERVER_URL}/${endpoint}`;
-    }
+    console.log(`[API] ${endpoint} -> ${url}`, data); // Log para debug
+
     try {
         const response = await fetch(url, {
             method: 'POST',
@@ -87,15 +91,17 @@ async function apiRequest(endpoint, data) {
             body: JSON.stringify(data)
         });
         const result = await response.json();
+
         if (result.error) {
             console.warn(`API Error [${endpoint}]:`, result.error);
+            // Ignoramos erro visual no register para o login automático não mostrar alerta
             if (endpoint !== 'register') showMessage(`Erro: ${result.error}`, 'error');
             return { error: result.error };
         }
         return result;
     } catch (err) {
         console.error("Fetch Error:", err);
-        showMessage("Falha na conexão.", 'error');
+        showMessage("Falha na conexão ao servidor.", 'error');
         return null;
     }
 }
@@ -217,13 +223,12 @@ async function joinPvPGame() {
 }
 
 function startServerEvents(id) {
-    let url;
     if (eventSource) eventSource.close();
-    if (USE_LOCAL_SERVER) {
-        url = `${LOCAL_SERVER_URL}/update?nick=${encodeURIComponent(userNick)}&game=${encodeURIComponent(id)}`;
-    } else {
-        url = `${SERVER_URL}/update?nick=${encodeURIComponent(userNick)}&game=${encodeURIComponent(id)}`;
-    }
+
+    const url = `${SERVER_URL}/update?nick=${encodeURIComponent(userNick)}&game=${encodeURIComponent(id)}`;
+
+    console.log("[SSE] Connecting to:", url);
+
     eventSource = new EventSource(url);
     eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
@@ -239,10 +244,31 @@ function updateBoardFromServer(data) {
     console.log("Server Update:", data);
 
     if (data.players) {
+        const numPlayers = Object.keys(data.players).length;
+
+        // Se houver menos de 2 jogadores, estamos à espera
+        if (numPlayers < 2) {
+            turnPlayerDisplay.textContent = "Aguardando oponente...";
+            turnIndicator.className = ''; // Remove cor
+            dicePanel.style.opacity = "0.5";
+            dicePanel.style.pointerEvents = "none";
+            showMessage("À espera que o segundo jogador entre...", 'info');
+
+            // Define a nossa cor, mas não desenha o jogo "ativo" ainda
+            const myColorName = data.players[userNick];
+            myServerColor = myColorName ? myColorName.toLowerCase() : 'blue';
+
+            // Se houver peças, desenha-as para não ficar vazio, mas sem jogar
+            if (data.pieces) renderServerPiecesWithMirror(data.pieces);
+            return; // Sai da função aqui, impedindo o jogo de começar
+        }
+
+        // Se já há 2 jogadores, define a cor e continua
         const myColorName = data.players[userNick];
         myServerColor = myColorName ? myColorName.toLowerCase() : 'blue';
         boardElement.classList.remove('board-rotated');
     }
+    // ----------------------------------------------------
 
     if (data.pieces) {
         renderServerPiecesWithMirror(data.pieces);
@@ -263,6 +289,7 @@ function updateBoardFromServer(data) {
         // Se o servidor envia o valor do dado
         if (data.dice && data.dice.value) {
              const serverDiceValue = data.dice.value;
+             // Ignora atualização se fomos nós que jogámos e o visual já atualizou
              let ignoreDice = (previousTurn !== currentTurn && isMyTurn);
 
              if (!ignoreDice && diceValue !== serverDiceValue) {
@@ -294,18 +321,21 @@ function updateBoardFromServer(data) {
             dicePanel.style.opacity = "1";
             dicePanel.style.pointerEvents = "auto";
 
+            if (data.step === 'roll' && diceValue > 0) {
+                diceValue = 0;
+                if(diceValueDisplay) diceValueDisplay.textContent = "-";
+                if(diceMessage) diceMessage.textContent = "Jogue Novamente!";
+            }
             // Se já tenho dado, ver se tenho movimentos
             if (diceValue > 0) {
-                // Pequena pausa para garantir que o tabuleiro está renderizado
                 setTimeout(() => {
                     const currentState = window.buildStateFromDOM();
-                    // Em local, eu sou sempre '2' (Blue)
+                    // Em local, eu sou sempre '2' (Blue) visualmente devido à renderização espelhada
                     const possibleMoves = window.legalMovesForDice(currentState, 2, diceValue);
 
                     if (possibleMoves.length === 0) {
                         diceMessage.textContent = "Sem jogadas...";
                         showMessage(`Dado: ${diceValue}. Sem movimentos! A passar...`, 'error');
-                        // Passar automaticamente após delay
                         setTimeout(() => {
                             if (window.playerTurn === 'blue' && diceValue > 0) {
                                 serverPass();
@@ -352,9 +382,11 @@ function renderServerPiecesWithMirror(serverPieces) {
         for(let c=0; c<window.BOARD_SIZE; c++) window.matrix[r][c] = 0;
     }
 
-    // Se sou Blue no servidor, o meu tabuleiro visual roda para eu ficar em baixo
     const myColor = myServerColor ? myServerColor.toLowerCase() : 'blue';
-    let rotateBoard = (myColor === 'blue');
+
+    // O Blue já está na linha 3 (fundo) no servidor, por isso fica no sítio certo.
+    // O Red está na linha 0 (topo) no servidor, por isso precisa de rodar para o fundo.
+    let rotateBoard = (myColor === 'red');
 
     serverPieces.forEach((cell, serverIndex) => {
         if (!cell) return;
@@ -365,33 +397,12 @@ function renderServerPiecesWithMirror(serverPieces) {
         let r_visual = r_server;
         let c_visual = c_server;
 
-        // 1. Rotação (Se eu for Blue)
-        // Se r_server=0 (Inimigo), r_visual passa a 3 (Topo do meu ecrã? Não, fundo).
-        // Espera: NUM_ROWS=4. Indices 0,1,2,3.
-        // Se eu sou Blue, quero que a minha base (Server Row 3) fique em baixo (Visual Row 3).
-        // Se eu não rodar, Server Row 3 é Visual Row 3.
-        // Se o CSS desenha Row 0 no topo e Row 3 no fundo:
-        // ENTÃO: Se eu sou Blue, e a minha base é server row 3, não preciso de rodar verticalmente?
-        // DEPENDE do servidor. Normalmente Jogador 1 (Red) = Row 0. Jogador 2 (Blue) = Row 3.
-        // Se eu sou Blue, vejo a minha base em baixo (Row 3).
-        // Se eu sou Red, vejo a minha base em baixo (Row 3). -> AQUI PRECISO DE RODAR.
-        
-        // CORREÇÃO DA LÓGICA DE ESPELHO:
-        // O código original assumia que 'Blue' roda. Vamos assumir que QUEM JOGA quer ver a sua base em baixo.
-        // Se eu sou Blue (Base 3): Visual 3 = Server 3. (Sem rotação vertical).
-        // Se eu sou Red (Base 0): Visual 3 = Server 0. (Rotação necessária).
-        
-        // No entanto, o teu código original dizia "rotateBoard = (myColor === 'blue')".
-        // Vamos manter a consistência com o que tinhas, mas garantindo que o ZigZag bate certo.
-        
+        // 1. Rotação Vertical
         if (rotateBoard) {
             r_visual = (window.NUM_ROWS - 1) - r_server;
         }
 
-        // 2. Zig-Zag
-        // O servidor lineariza 0..8 da Esq->Dir.
-        // Mas visualmente, as linhas 0 e 2 correm da Dir->Esq (para o ciclo funcionar).
-        // Se a linha VISUAL for 0 ou 2, invertemos a coluna.
+        // 2. Zig-Zag (Depende da linha VISUAL)
         if (r_visual === 0 || r_visual === 2) {
             c_visual = (window.BOARD_SIZE - 1) - c_server;
         } else {
@@ -402,11 +413,10 @@ function renderServerPiecesWithMirror(serverPieces) {
         if (visualIndex < 0 || visualIndex >= squares.length) return;
 
         const rawColor = cell.color ? cell.color.toLowerCase() : 'blue';
-        
-        // Truque visual: Em Local/PvP, o "Meu" é sempre Azul e o "Dele" é Vermelho
+
+        // Mantém a tua cor sempre como "Azul" visualmente, e o inimigo "Vermelho"
         let visualColor = rawColor;
         if (myColor === 'red') {
-             // Se eu sou Red, o servidor diz "Red", eu quero ver "Azul" (Minha peça)
              visualColor = (rawColor === 'red') ? 'blue' : 'red';
         }
 
@@ -449,7 +459,7 @@ async function serverMove(row, col) {
     // 1. Inverter Rotação Vertical
     // Temos de fazer o inverso exato de renderServerPiecesWithMirror
     let r_server = row;
-    if (myColor === 'blue') {
+    if (myColor === 'red') {
         r_server = (window.NUM_ROWS - 1) - row;
     }
 
@@ -554,7 +564,6 @@ function createLocalBoard() {
     }
 }
 
-// --- CORE: CLICK NO TABULEIRO ---
 async function handleSquareClick(e) {
     const sq = e.currentTarget;
     const r = parseInt(sq.dataset.row);
@@ -772,7 +781,6 @@ async function move(row, col, diceValue, pieceElement, originalSq, aiMoveChoice=
 async function highlightMove(row, col, diceValue, piece, sq, color='blue') {
     let r=parseInt(row), c=parseInt(col);
 
-    // --- INICIO DA CORREÇÃO: REGRA DE BLOQUEIO DE INVASOR ---
     const isBluePiece = piece.classList.contains('piece_blue');
     const myHomeRow = isBluePiece ? 3 : 0; // Linha 3 é casa do Azul
     const enemyHomeRow = isBluePiece ? 0 : 3; // Linha 0 é casa do Vermelho (base inimiga para o Azul)

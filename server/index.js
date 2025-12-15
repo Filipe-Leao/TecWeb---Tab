@@ -8,6 +8,59 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATA_PATH = path.join(__dirname, '.', 'data.json');
 
+// Guarda os objetos setTimeout: { "gameId": TimeoutObject }
+const gameTimers = {};
+
+// Função para iniciar/reiniciar o cronómetro de 2 minutos
+function resetGameTimer(gameId, activePlayer) {
+    // 1. Cancelar timer anterior se existir
+    if (gameTimers[gameId]) {
+        clearTimeout(gameTimers[gameId]);
+    }
+
+    // 2. Criar novo timer de 2 minutos (120000 ms)
+    gameTimers[gameId] = setTimeout(async () => {
+        console.log(`⏰ Timeout no jogo ${gameId}. Jogador ${activePlayer} perdeu.`);
+
+        // Carregar dados atuais
+        const data = await loadData();
+        const gameIndex = data.games.findIndex(g => g.id === gameId);
+
+        if (gameIndex === -1) return; // Jogo já não existe
+
+        const game = data.games[gameIndex];
+
+        // Determinar vencedor (o adversário)
+        const winner = Object.keys(game.players).find(p => p !== activePlayer);
+        game.winner = winner;
+        game.step = 'finished'; // Marca como terminado
+
+        // Atualizar estatísticas
+        const winnerUser = data.users.find(u => u.nick === winner);
+        const loserUser = data.users.find(u => u.nick === activePlayer);
+        if(winnerUser) winnerUser.games_won++;
+        if(loserUser) loserUser.games_lost++;
+
+        // Guardar e Notificar
+        await saveData(data);
+        notifyPlayers(gameId, {
+            winner: winner,
+            step: 'finished' // Força o frontend a fechar
+        });
+
+        // Limpar referência do timer
+        delete gameTimers[gameId];
+
+    }, 2 * 60 * 1000); // 2 minutos (120000 ms)
+}
+
+function clearGameTimer(gameId) {
+    if (gameTimers[gameId]) {
+        clearTimeout(gameTimers[gameId]);
+        delete gameTimers[gameId];
+    }
+}
+
 // ==========================================
 // GESTÃO DE DADOS
 // ==========================================
@@ -130,6 +183,9 @@ app.post('/join', async (req, res) => {
         game.players[nick] = (p1Color === 'Blue') ? 'Red' : 'Blue';
         await saveData(data);
 
+        // TIMER: Jogo começou (2 jogadores). Inicia timer para quem tem a vez.
+        resetGameTimer(game.id, game.turn);
+
         // Notificar o jogador que estava à espera via SSE
         setTimeout(() => {
             notifyPlayers(game.id, {
@@ -149,9 +205,6 @@ app.post('/join', async (req, res) => {
     const pieces = Array(size * 4).fill(null);
 
     // Setup inicial peças (Blue em baixo/fim, Red em cima/início)
-    // Nota: O servidor guarda linearmente. 0..size-1 (Topo), (size*3)..size*4-1 (Fundo)
-    // Se o criador for Blue (fundo), pomos peças no fundo.
-
     // Simplificação: Quem cria é Blue.
     for(let i=0; i<size; i++) pieces[i] = { color: 'Red', inMotion: false, reachedLastRow: false };
     for(let i=size*3; i<size*4; i++) pieces[i] = { color: 'Blue', inMotion: false, reachedLastRow: false };
@@ -184,6 +237,9 @@ app.post('/leave', async (req, res) => {
 
     const game = data.games[gameIndex];
 
+    // TIMER: Se alguém sai, cancela o timer
+    clearGameTimer(gameId);
+
     // Se só tem 1 jogador, apaga o jogo
     if (Object.keys(game.players).length === 1) {
         data.games.splice(gameIndex, 1);
@@ -194,6 +250,7 @@ app.post('/leave', async (req, res) => {
     // Se tem 2, o outro ganha
     const winner = Object.keys(game.players).find(p => p !== nick);
     game.winner = winner;
+    game.step = 'finished';
 
     // Atualizar stats
     const winnerUser = data.users.find(u => u.nick === winner);
@@ -208,7 +265,7 @@ app.post('/leave', async (req, res) => {
 });
 
 // ==========================================
-// LÓGICA DE JOGO (O QUE FALTAVA)
+// LÓGICA DE JOGO
 // ==========================================
 
 // Rota GET para SSE (Server-Sent Events)
@@ -293,23 +350,30 @@ app.post('/pass', async (req, res) => {
 
     if (!game || game.turn !== nick) return res.status(400).json({ error: 'Erro' });
 
-    // Trocar turno
-    const players = Object.keys(game.players);
-    const nextPlayer = players.find(p => p !== nick);
+    const diceVal = game.dice ? parseInt(game.dice.value) : 0;
 
-    game.turn = nextPlayer;
-    game.dice = null; // Reset dado
-    game.step = 'roll';
-    game.selectedPiece = null;
+    // Se o dado for 1, 4 ou 6, o jogador mantém a vez, apenas reseta o dado
+    if ([1, 4, 6].includes(diceVal)) {
+        game.dice = null; // Limpa o dado para permitir novo roll
+        game.step = 'roll';
+        game.selectedPiece = null;
+        // TIMER: Se jogo de novo, reinicio o timer para mim (dar mais 2 min)
+        resetGameTimer(gameId, nick);
+    } else {
+        // Caso contrário (2 ou 3), passa a vez ao adversário
+        const players = Object.keys(game.players);
+        const nextPlayer = players.find(p => p !== nick);
+        game.turn = nextPlayer;
+        game.dice = null;
+        game.step = 'roll';
+        game.selectedPiece = null;
+        // TIMER: Troca de turno, inicia timer para o outro
+        resetGameTimer(gameId, nextPlayer);
+    }
+    // -------------------------------------------
 
     await saveData(data);
-
-    notifyPlayers(gameId, {
-        turn: game.turn,
-        step: game.step,
-        dice: null
-    });
-
+    notifyPlayers(gameId, game);
     res.json({});
 });
 
@@ -332,7 +396,6 @@ app.post('/notify', async (req, res) => {
             return res.status(400).json({ error: 'Not your piece' });
         }
 
-        // CORREÇÃO: REGRA DO INVASOR NO SERVIDOR
         // Se eu sou Blue, Home é Row 3 (indices 27-35), Enemy é Row 0 (0-8).
         // Se eu sou Red, Home é Row 0 (0-8), Enemy é Row 3 (27-35).
         const size = game.size;
@@ -361,7 +424,6 @@ app.post('/notify', async (req, res) => {
         game.step = 'to';
         await saveData(data);
         // Não notificamos todos no select para não mostrar ao inimigo o que estamos a pensar
-        // Ou notificamos se quisermos mostrar "seleção". O enunciado sugere 'selected'.
         return res.json({});
     }
 
@@ -369,12 +431,10 @@ app.post('/notify', async (req, res) => {
     else if (game.step === 'to') {
         const fromIdx = game.selectedPiece;
 
-        // Simples validação de distância (Básica)
-        // Num projeto real, terias de validar o caminho exato aqui
-        // Mas vamos assumir que o cliente envia destinos válidos, validando apenas a posse.
-
         // Mover
         const movingPiece = game.pieces[fromIdx];
+        if (!movingPiece) return res.status(400).json({ error: 'Selection lost' }); // Segurança extra
+
         movingPiece.inMotion = true; // Já não é first move
 
         // Captura?
@@ -398,20 +458,28 @@ app.post('/notify', async (req, res) => {
              // Atualizar stats
             const winnerUser = data.users.find(u => u.nick === nick);
             if(winnerUser) winnerUser.games_won++;
+
+            // TIMER: Jogo acabou, remove timer
+            clearGameTimer(gameId);
         } else {
             // Verificar se joga de novo
             console.log(game.dice)
-            const diceVal = game.dice.value;
+            const diceVal = parseInt(game.dice.value);
             console.log(`Jogador ${nick} rolou ${diceVal}`);
             if ([1, 4, 6].includes(diceVal)) {
                 game.step = 'roll';
                 game.dice = null; // Permitir novo roll
+                // TIMER: Joga de novo, reinicia timer para si mesmo
+                resetGameTimer(gameId, nick);
             } else {
                 // Passar vez automaticamente
                 const players = Object.keys(game.players);
-                game.turn = players.find(p => p !== nick);
+                const nextPlayer = players.find(p => p !== nick);
+                game.turn = nextPlayer;
                 game.step = 'roll';
                 game.dice = null;
+                // TIMER: Troca de turno, inicia timer para adversário
+                resetGameTimer(gameId, nextPlayer);
             }
         }
 
@@ -430,4 +498,4 @@ app.post('/notify', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => console.log(`✅ Servidor de Jogo a correr na porta ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Servidor de Jogo a correr na porta ${PORT} (com Timeout 2min)`));
