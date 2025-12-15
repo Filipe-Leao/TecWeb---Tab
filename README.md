@@ -1,50 +1,91 @@
-# TecWeb – Tab
+# 🎲 Jogo Tâb - Multiplayer & AI
 
-## How to run
+![Node.js](https://img.shields.io/badge/Node.js-v18+-green?style=flat&logo=node.js)
+![Express](https://img.shields.io/badge/Express-Server-blue?style=flat)
+![Status](https://img.shields.io/badge/Status-Completed-success)
 
-### 1) Prerequisites
+Implementação digital do jogo de tabuleiro tradicional **Tâb**, desenvolvida no âmbito da disciplina de Tecnologias Web. O projeto apresenta uma arquitetura Cliente-Servidor robusta, suportando jogos em tempo real e inteligência artificial.
 
-You need to have the database running locally.
+## 🚀 Funcionalidades
 
-#### 1.1 — Install XAMPP (any OS)
+### Backend (Node.js)
+* **API RESTful:** Gestão de utilizadores (Registo/Login), Rankings e Lobby de jogos.
+* **Lógica de Jogo Server-Side:** O servidor valida todas as regras (movimento, captura, turnos) impedindo batotas.
+* **Tempo Real (SSE):** Utilização de *Server-Sent Events* para atualizações instantâneas de tabuleiro sem *polling*.
+* **Persistência de Dados:** Estado do jogo e utilizadores guardados em `data.json`.
+* **Segurança:** Passwords encriptadas com Hash MD5 e Salt.
 
-[https://www.apachefriends.org/download.html](https://www.apachefriends.org/download.html)
+### Frontend
+* **Modo PvP (Online):** Joga contra outros jogadores em redes diferentes.
+* **Modo PvC (Local):** Joga contra o computador com IA baseada em simulação Monte Carlo.
+* **Animações:** Renderização do dado de paus usando HTML5 Canvas.
+* **Configuração Automática:** O cliente deteta automaticamente se está a correr em `localhost` ou no servidor da faculdade (`twserver`).
 
-#### 1.2 — Start services
+---
 
-Open **XAMPP Control Panel**
-start:
+## 🛠️ Instalação e Execução
 
-* Apache
-* MySQL
+Siga estes passos para correr o projeto na sua máquina local.
 
-Then open MySQL Admin.
+### 1. Pré-requisitos
+Certifique-se de que tem o [Node.js](https://nodejs.org/) instalado.
 
-#### 1.3 — Import the database
-
-Import `tab_db.sql`.
-
-> *(If you already imported it before, you can skip this step.)*
-
-#### 1.4 — Have Node + npm installed
-
-Make sure npm is available on your machine.
-
-Install required npm modules
-
+### 2. Clonar o Repositório
 ```bash
-npm i express mysql2 cors bcrypt
+git clone https://github.com/Filipe-Leao/TecWeb---Tab.git
+cd TecWeb---Tab
+```
+
+### 3. Instalar Dependências
+```bash
+npm install
+```
+
+### 4. Iniciar o Servidor
+```bash
+npm start
+```
+*O servidor iniciará na porta **8135**.*
+
+### 5. Jogar
+Abra o seu navegador e aceda a:
+👉 **http://localhost:8135**
+
+> **Nota:** Para testar o modo Multiplayer localmente, abra o jogo em duas janelas diferentes e faça login com utilizadores diferentes.
+
+---
+
+## 📂 Estrutura do Projeto
+
+```text
+TecWeb---Tab/
+├── server/
+│   ├── index.js          # Lógica principal do servidor (Rotas, Regras, SSE)
+│   └── data.json         # Base de dados (Utilizadores e Jogos)
+├── index.html            # Interface do jogo
+├── style.css             # Estilos
+├── script.js             # Comunicação com a API e gestão de UI
+├── MonteCarlo.js         # Inteligência Artificial (Bot)
+├── canvas-animations.js  # Animação do Dado
+├── localStorage.js       # Persistência de scores locais
+└── package.json          # Dependências do projeto
 ```
 
 ---
 
-### 2) Run the project
+## 🎮 Regras do Jogo
 
-Inside this project’s root (same folder as `index.js`) run:
+O objetivo é capturar todas as peças do adversário.
 
-```bash
-npm run dev
-```
+1.  **Movimento:** As peças movem-se conforme o valor do dado (4 paus).
+2.  **Primeiro Movimento:** Uma peça só pode sair da casa inicial se o jogador tirar um **1 (Tâb)**.
+3.  **Captura:** Se aterrar numa casa ocupada pelo adversário, a peça dele é removida.
+4.  **Invasão:** Não pode mover uma peça que já invadiu a base inimiga enquanto ainda tiver peças na sua própria base ("Regra do Invasor").
+5.  **Jogar Novamente:** Se tirar 1, 4 ou 6 no dado, joga novamente.
 
-Then open:
-[http://localhost:3000](http://localhost:3000)
+---
+
+## 👥 Autores
+
+* **Grupo 35**
+* Tecnologias Web - DCC/FCUP
