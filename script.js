@@ -763,6 +763,30 @@ async function move(row, col, diceValue, pieceElement, originalSq, aiMoveChoice=
 
 async function highlightMove(row, col, diceValue, piece, sq, color='blue') {
     let r=parseInt(row), c=parseInt(col);
+
+    // --- INICIO DA CORREÇÃO: REGRA DE BLOQUEIO DE INVASOR ---
+    const isBluePiece = piece.classList.contains('piece_blue');
+    const myHomeRow = isBluePiece ? 3 : 0; // Linha 3 é casa do Azul
+    const enemyHomeRow = isBluePiece ? 0 : 3; // Linha 0 é casa do Vermelho (base inimiga para o Azul)
+    const myPieceVal = isBluePiece ? 2 : 1; // 2 na matrix é Azul
+
+    // Se a peça que queremos mexer está na base inimiga
+    if (r === enemyHomeRow) {
+        // Verificar se ainda temos peças na NOSSA casa
+        let friendsInHome = 0;
+        for (let i = 0; i < window.BOARD_SIZE; i++) {
+            if (window.matrix[myHomeRow][i] === myPieceVal) {
+                friendsInHome++;
+            }
+        }
+
+        // Se ainda houver peças em casa, esta peça invasora está bloqueada
+        if (friendsInHome > 0) {
+            showMessage("Peça bloqueada! Tem de tirar as peças da sua base primeiro.", 'error');
+            return 'fail';
+        }
+    }
+
     if(piece.getAttribute('data-first-move') === 'true') {
         if(diceValue!==1) { showMessage("Requer 1 (Tâb).", 'error'); return (diceValue===4||diceValue===6)?'reroll_only':'fail'; }
     }
@@ -799,11 +823,11 @@ async function highlightMove(row, col, diceValue, piece, sq, color='blue') {
              const cont = window.matrix[t.r][t.c];
              // Validação para não comer a própria peça
              const isAlly = (color==='blue' && cont===2) || (color==='red' && cont===1);
-             
+
              if(t.r===parseInt(row) && t.c===parseInt(col)) continue;
-             
-             if(isAlly) { 
-                 tSq.classList.add('highlight-blocked'); 
+
+             if(isAlly) {
+                 tSq.classList.add('highlight-blocked');
              } else {
                  if(cont!==0) tSq.classList.add('highlight-capture');
                  else highlight(tSq, color);

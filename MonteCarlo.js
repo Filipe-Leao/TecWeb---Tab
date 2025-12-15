@@ -49,6 +49,19 @@ function legalMovesForDice(state, pVal, dice) {
 
             const meta = state.meta[r][c] || { first_move: true, visited_enemy: false };
 
+            // Regra: Se está na base inimiga, não pode mover se houver peças na base amiga
+            const myHomeRow = (pVal === 2) ? 3 : 0; // 2 é Blue (Home 3), 1 é Red (Home 0)
+            const enemyRow = (pVal === 2) ? 0 : 3;
+
+            if (r === enemyRow) {
+                let friendsInHome = 0;
+                for (let k = 0; k < boardSize; k++) {
+                    if (state.matrix[myHomeRow][k] === pVal) friendsInHome++;
+                }
+                // Se houver amigos na base, esta peça é ignorada (não gera movimentos)
+                if (friendsInHome > 0) continue;
+            }
+
             if (meta.first_move && dice !== 1) continue;
 
             let paths = [{ r: r, c: c, vis: meta.visited_enemy, fm: meta.first_move, choice: null }];

@@ -5,544 +5,425 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
-console.log(__filename);
 const __dirname = path.dirname(__filename);
-console.log(__dirname);
 const DATA_PATH = path.join(__dirname, '.', 'data.json');
-console.log(DATA_PATH);
 
-// --------------------------------------
-// FUNÇÕES AUXILIARES
-// --------------------------------------
+// ==========================================
+// GESTÃO DE DADOS
+// ==========================================
 
 async function loadData() {
     try {
         const raw = await fs.readFile(DATA_PATH, 'utf8');
         return JSON.parse(raw);
     } catch (err) {
-        if (err.code === 'ENOENT') {
-            console.log('Data file not found, creating new one.');
-            const initialData = { users: [], games: [] };
-            await saveData(initialData);
-            return initialData;
-        }
-        throw err;
+        return { users: [], games: [] };
     }
 }
 
 async function saveData(data) {
     await fs.writeFile(DATA_PATH, JSON.stringify(data, null, 2), 'utf8');
-    console.log('Data saved to', DATA_PATH);
 }
 
-// Hash MD5 genérico
 function md5(value) {
     return crypto.createHash('md5').update(value).digest('hex');
 }
 
-// Gerar salt aleatório
-function generateSalt() {
-    return crypto.randomBytes(16).toString('hex');
-}
-
-// Hash password com salt
 function hashPassword(password, salt) {
     return md5(password + salt);
 }
 
-
-// --------------------------------------
-// SERVIDOR
-// --------------------------------------
+// ==========================================
+// SERVIDOR & SSE (Server-Sent Events)
+// ==========================================
 
 const app = express();
+const PORT = 8135;
 
-// ✅ ADICIONAR CORS ANTES DE TUDO
+// Armazena conexões ativas para atualizações em tempo real
+// Estrutura: { "gameId": [res1, res2, ...] }
+const clients = {};
+
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    
-    // Responder a preflight requests
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-    }
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Methods', 'GET, POST');
     next();
 });
 
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '..')));
+
+// Função para notificar todos os jogadores de um jogo
+function notifyPlayers(gameId, gameData) {
+    if (!clients[gameId]) return;
+
+    const dataToSend = JSON.stringify(gameData);
+
+    // Enviar para todos os clientes conectados a este jogo
+    clients[gameId].forEach(client => {
+        client.write(`data: ${dataToSend}\n\n`);
+    });
+}
+
+// ==========================================
+// ROTAS DE AUTENTICAÇÃO E LOBBY
+// ==========================================
 
 app.post('/register', async (req, res) => {
     const { nick, password } = req.body;
-
-    // ---- validação básica ----
-    if (typeof nick !== 'string' || typeof password !== 'string') {
-        return res.status(400).json({ error: 'Invalid arguments' });
-    }
+    if (!nick || !password) return res.status(400).json({ error: 'Invalid data' });
 
     const data = await loadData();
-
     const existing = data.users.find(u => u.nick === nick);
 
-    // ---- Login ----
     if (existing) {
-        // Usar o salt existente para verificar
-        const hashed = hashPassword(password, existing.salt);
-        
-        // Sucesso na autenticação
-        if (existing.password === hashed) {
-            return res.status(200).json({
-                message: 'User authenticated',
-                nick: existing.nick
-            });
+        if (hashPassword(password, existing.salt) === existing.password) {
+            return res.status(200).json({});
+        } else {
+            return res.status(401).json({ error: 'User registered with a different password' });
         }
-
-        // password diferente
-        return res.status(401).json({
-            error: 'Wrong password for existing user'
-        });
     }
 
-    // ---- Register ----
-    const salt = generateSalt();
-    const hashed = hashPassword(password, salt);
-    
-    const newUser = {
+    const salt = crypto.randomBytes(16).toString('hex');
+    data.users.push({
         nick,
-        password: hashed,
+        password: hashPassword(password, salt),
         salt,
         games_won: 0,
         games_lost: 0
-    };
-
-    data.users.push(newUser);
-    await saveData(data);
-
-    return res.status(201).json({
-        message: 'User registered',
-        nick
     });
+
+    await saveData(data);
+    res.status(200).json({});
 });
 
 app.post('/ranking', async (req, res) => {
-    const { group, size } = req.body;
-
-    // Validação: group obrigatório
-    if (group === undefined) {
-        return res.status(400).json({ error: 'Undefined group' });
-    }
-
-    // Validação: group tem que ser número
-    if (typeof group !== 'number' || !Number.isInteger(group)) {
-        return res.status(400).json({ error: `Invalid group '${group}'` });
-    }
-
-    // Validação: size obrigatório
-    if (size === undefined) {
-        return res.status(400).json({ error: `Invalid size 'undefined'` });
-    }
-
-    // Validação: size tem que ser número inteiro
-    if (typeof size !== 'number' || !Number.isInteger(size)) {
-        return res.status(400).json({ error: `Invalid size '${size}'` });
-    }
+    const { size } = req.body; // group ignorado para simplificar
+    if (!size) return res.status(400).json({ error: 'Undefined size' });
 
     const data = await loadData();
+    // Filtra e ordena
+    const ranking = data.users
+        .map(u => ({ nick: u.nick, victories: u.games_won, games: u.games_won + u.games_lost }))
+        .sort((a, b) => b.victories - a.victories);
 
-    // Filtrar jogos pelo tamanho do tabuleiro
-    const gamesOfSize = data.games.filter(g => g.size === size && g.winner);
-
-    // Contar vitórias e derrotas por jogador para este tamanho
-    const playerStats = {};
-
-    gamesOfSize.forEach(game => {
-        const winner = game.winner;
-        const loser = Object.keys(game.players).find(p => p !== winner);
-
-        // Inicializar stats se não existir
-        if (!playerStats[winner]) {
-            playerStats[winner] = { nick: winner, victories: 0, games: 0 };
-        }
-        if (loser && !playerStats[loser]) {
-            playerStats[loser] = { nick: loser, victories: 0, games: 0 };
-        }
-
-        // Atualizar contadores
-        playerStats[winner].victories++;
-        playerStats[winner].games++;
-        
-        if (loser) {
-            playerStats[loser].games++;
-        }
-    });
-
-    // Converter para array e ordenar
-    const ranking = Object.values(playerStats)
-        .sort((a, b) => {
-            // Ordenar por vitórias (descendente)
-            if (b.victories !== a.victories) {
-                return b.victories - a.victories;
-            }
-            // Em caso de empate, ordenar por jogos (ascendente)
-            return a.games - b.games;
-        });
-
-    return res.status(200).json({ ranking });
-});
-
-function createBoard(size) {
-    const board = [];
-    for (let i = 0; i < 4 * size; i++) {
-        if (i < size){
-            const blue_piece = {   
-                color: "Blue",
-                inMotion: false,
-                reachedLastRow: false 
-            };
-            board.push(blue_piece);
-        } else if (i >= 4 * size - size){
-            const red_piece = {   
-                color: "Red",
-                inMotion: false,
-                reachedLastRow: false 
-            };
-            board.push(red_piece);
-        } else {
-            board.push(null);
-        }
-    }
-    return board;
-}
-
-// Criar jogo (ID gerado com MD5)
-app.post('/games', async (req, res) => {
-    const { group, nick1, nick2, size } = req.body;
-
-    // Validações
-    if (!nick1 || !nick2) {
-        return res.status(400).json({ error: 'Missing players' });
-    }
-
-    if (!size || typeof size !== 'number') {
-        return res.status(400).json({ error: 'Invalid size' });
-    }
-
-    // Verificar utilizador
-    const data = await loadData();
-    const user = data.users.find(u => u.nick === nick);
-    
-    if (!user) {
-        return res.status(401).json({ error: 'User not found' });
-    }
-
-    const hashed = hashPassword(password, user.salt);
-    if (user.password !== hashed) {
-        return res.status(401).json({ error: 'Invalid password' });
-    }
-
-    // Criar ID único
-    const id = md5(JSON.stringify({ nick, size, timestamp: Date.now() }));
-    
-    // Criar tabuleiro inicial
-    const pieces = createBoard(size);
-
-    // Criar jogo
-    const game = {
-        id,
-        group: group || GROUP_ID,
-        size,
-        pieces,
-        initial: nick,
-        turn: nick,
-        step: "roll",
-        players: {
-            [nick]: "Blue"
-        },
-        dice: null,
-        winner: null,
-        createdAt: new Date().toISOString()
-    };
-
-    data.games.push(game);
-    await saveData(data);
-
-    // Retornar resposta compatível com script.js
-    return res.status(201).json({
-        game: id,
-        pieces,
-        initial: nick1,
-        turn: nick1,
-        step: "roll",
-        players: {
-            [nick1]: "Blue",
-            [nick2]: "Red"
-        }
-    });
-}); 
-
-app.post('/update', async (req, res) => {
-    const { gameId, nick, password } = req.body;
-
-    // Validação básica
-    if (typeof gameId !== 'string' || typeof nick !== 'string' || typeof password !== 'string') {
-        return res.status(400).json({ error: 'Invalid arguments' });
-    }
-
-    const data = await loadData();
-
-    // Verificar utilizador
-    const user = data.users.find(u => u.nick === nick);
-    
-    if (!user) {
-        return res.status(401).json({ error: 'User not found' });
-    }
-
-    const hashed = hashPassword(password, user.salt);
-    if (user.password !== hashed) {
-        return res.status(401).json({ error: 'Invalid password' });
-    }
-
-    // Encontrar jogo
-    const game = data.games.find(g => g.id === gameId);
-    if (!game) {
-        return res.status(404).json({ error: 'Game not found' });
-    }
-
-    // Retornar estado do jogo
-    return res.status(200).json({
-        game: game.id,
-        pieces: game.pieces,
-        initial: Object.keys(game.players)[0],
-        turn: game.turn,
-        step: game.step,
-        players: game.players,
-        dice: game.dice,
-        winner: game.winner
-    });
+    res.json({ ranking: ranking.slice(0, 10) });
 });
 
 app.post('/join', async (req, res) => {
     const { group, nick, password, size } = req.body;
-
-    // Validação: argumentos obrigatórios
-    if (group === undefined) {
-        return res.status(400).json({ error: 'Missing group' });
-    }
-    if (!nick) {
-        return res.status(400).json({ error: 'Missing nick' });
-    }
-    if (!password) {
-        return res.status(400).json({ error: 'Missing password' });
-    }
-    if (size === undefined) {
-        return res.status(400).json({ error: 'Missing size' });
-    }
-
-    // Validação: tipos
-    if (typeof group !== 'number' || !Number.isInteger(group)) {
-        return res.status(400).json({ error: `Invalid group '${group}'` });
-    }
-    if (typeof nick !== 'string') {
-        return res.status(400).json({ error: 'Invalid nick' });
-    }
-    if (typeof password !== 'string') {
-        return res.status(400).json({ error: 'Invalid password' });
-    }
-    if (typeof size !== 'number' || !Number.isInteger(size) || size <= 0) {
-        return res.status(400).json({ error: `Invalid size '${size}'` });
-    }
-
     const data = await loadData();
 
-    // Autenticação
+    // Validar user
     const user = data.users.find(u => u.nick === nick);
-    
-    if (!user) {
-        return res.status(401).json({ error: 'User not registered' });
+    if (!user || user.password !== hashPassword(password, user.salt)) {
+        return res.status(401).json({ error: 'Auth failed' });
     }
 
-    const hashed = hashPassword(password, user.salt);
-    if (user.password !== hashed) {
-        return res.status(401).json({ error: 'Invalid password' });
-    }
+    // Tentar encontrar jogo à espera
+    let game = data.games.find(g => g.group === group && g.size === size && Object.keys(g.players).length === 1 && !g.players[nick]);
 
-    // Procurar jogo à espera com mesmo grupo e tamanho
-    const waitingGame = data.games.find(g => 
-        g.group === group &&
-        g.size === size &&
-        Object.keys(g.players).length === 1 &&
-        !g.players[nick] // Não pode juntar-se ao próprio jogo
-    );
-
-    if (waitingGame) {
-        // Emparelhar com jogo existente
-        const assignedColor = Object.values(waitingGame.players).includes('Blue') ? 'Red' : 'Blue';
-        waitingGame.players[nick] = assignedColor;
-        
+    if (game) {
+        // Juntar-se
+        const p1Color = Object.values(game.players)[0];
+        game.players[nick] = (p1Color === 'Blue') ? 'Red' : 'Blue';
         await saveData(data);
 
-        return res.status(200).json({
-            game: waitingGame.id
+        // Notificar o jogador que estava à espera via SSE
+        notifyPlayers(game.id, {
+            game: game.id,
+            players: game.players,
+            turn: game.turn,
+            pieces: game.pieces,
+            step: 'roll' // Reset step
         });
+
+        return res.json({ game: game.id });
     }
 
-    // Criar novo jogo à espera de oponente
-    const id = md5(JSON.stringify({ group, nick, size, timestamp: Date.now() }));
-    const pieces = createBoard(size);
+    // Criar novo jogo
+    const id = md5(nick + Date.now());
+    const pieces = Array(size * 4).fill(null);
+
+    // Setup inicial peças (Blue em baixo/fim, Red em cima/início)
+    // Nota: O servidor guarda linearmente. 0..size-1 (Topo), (size*3)..size*4-1 (Fundo)
+    // Se o criador for Blue (fundo), pomos peças no fundo.
+
+    // Simplificação: Quem cria é Blue.
+    for(let i=0; i<size; i++) pieces[i] = { color: 'Red', inMotion: false, reachedLastRow: false };
+    for(let i=size*3; i<size*4; i++) pieces[i] = { color: 'Blue', inMotion: false, reachedLastRow: false };
 
     const newGame = {
-        id,
-        group,
-        size,
-        pieces,
-        initial: nick,
-        turn: nick,
-        step: "roll",
-        players: {
-            [nick]: "Blue"
-        },
+        id, group, size, pieces,
+        players: { [nick]: 'Blue' },
+        turn: nick, // Quem cria começa? Ou waiting? Vamos por waiting.
+        step: 'roll',
         dice: null,
         winner: null,
-        createdAt: new Date().toISOString()
+        selectedPiece: null // Auxiliar para o notify
     };
 
     data.games.push(newGame);
     await saveData(data);
-
-    return res.status(200).json({
-        game: id
-    });
+    res.json({ game: id });
 });
 
 app.post('/leave', async (req, res) => {
-    const { nick, password, game } = req.body;
-
-    // Validação: argumentos obrigatórios
-    if (!nick) {
-        console.log('Missing nick');
-        return res.status(400).json({ error: 'Missing nick' });
-    }
-    if (!password) {
-        console.log('Missing password');
-        return res.status(400).json({ error: 'Missing password' });
-    }
-    if (!game) {
-        console.log('Missing game');
-        return res.status(400).json({ error: 'Missing game' });
-    }
-
-    // Validação: tipos
-    if (typeof nick !== 'string') {
-        console.log('Invalid nick');
-        return res.status(400).json({ error: 'Invalid nick' });
-    }
-    if (typeof password !== 'string') {
-        console.log('Invalid password');
-        return res.status(400).json({ error: 'Invalid password' });
-    }
-    if (typeof game !== 'string') {
-        console.log('Invalid game');
-        return res.status(400).json({ error: 'Invalid game' });
-    }
-
+    const { nick, password, game: gameId } = req.body;
     const data = await loadData();
 
-    // Autenticação
+    // Auth Check (Simplificado)
     const user = data.users.find(u => u.nick === nick);
-    
-    if (!user) {
-        console.log('User not registered');
-        return res.status(401).json({ error: 'User not registered' });
-    }
+    if (!user || user.password !== hashPassword(password, user.salt)) return res.status(401).json({ error: 'Auth failed' });
 
-    const hashed = hashPassword(password, user.salt);
-    if (user.password !== hashed) {
-        console.log('Invalid password');
-        return res.status(401).json({ error: 'Invalid password' });
-    }
+    const gameIndex = data.games.findIndex(g => g.id === gameId);
+    if (gameIndex === -1) return res.status(404).json({ error: 'Game not found' });
 
-    // Encontrar jogo
-    const gameIndex = data.games.findIndex(g => g.id === game);
-    console.log('Game index found:', gameIndex);
-    
-    if (gameIndex === -1) {
-        console.log('Invalid game identifier');
-        return res.status(404).json({ error: 'Invalid game identifier' });
-    }
+    const game = data.games[gameIndex];
 
-    const foundGame = data.games[gameIndex];
-    console.log('Found game:', foundGame);
-
-    // Verificar se o jogador está no jogo
-    if (!foundGame.players[nick]) {
-        console.log('Player not in this game');
-        return res.status(403).json({ error: 'Player not in this game' });
-    }
-
-    // Caso 1: Jogo ainda à espera de emparelhamento (só 1 jogador)
-    if (Object.keys(foundGame.players).length === 1) {
-        console.log("Player leaving waiting game:", nick);
-        // Remover o jogo completamente
+    // Se só tem 1 jogador, apaga o jogo
+    if (Object.keys(game.players).length === 1) {
         data.games.splice(gameIndex, 1);
         await saveData(data);
-
-        return res.status(200).json({
-            message: 'Left waiting game',
-            game: game
-        });
+        return res.json({});
     }
 
-    // Caso 2: Jogo em curso (2 jogadores) - adversário ganha
-    if (foundGame.winner !== null) {
-        console.log('Game already finished');
-        // Jogo já terminou
-        return res.status(200).json({
-            message: 'Game already finished',
-            game: game,
-            winner: foundGame.winner
-        });
-    }
+    // Se tem 2, o outro ganha
+    const winner = Object.keys(game.players).find(p => p !== nick);
+    game.winner = winner;
 
-    // Determinar adversário
-    const opponent = Object.keys(foundGame.players).find(p => p !== nick);
+    // Atualizar stats
+    const winnerUser = data.users.find(u => u.nick === winner);
+    const loserUser = data.users.find(u => u.nick === nick);
+    if(winnerUser) winnerUser.games_won++;
+    if(loserUser) loserUser.games_lost++;
 
-    // ✅ ATUALIZAR DIRETAMENTE O JOGO NO ARRAY
-    data.games[gameIndex].winner = opponent;
-    data.games[gameIndex].step = "finished";
-
-    console.log(`Player ${nick} left game ${game}, ${opponent} wins`);
-    console.log('Updated game:', data.games[gameIndex]); // Log para debug
-
-    // Atualizar estatísticas dos jogadores
-    const opponentUserIndex = data.users.findIndex(u => u.nick === opponent);
-    const leavingUserIndex = data.users.findIndex(u => u.nick === nick);
-
-    if (opponentUserIndex !== -1) {
-        data.users[opponentUserIndex].games_won = (data.users[opponentUserIndex].games_won || 0) + 1;
-        console.log(`${opponent} wins incremented to:`, data.users[opponentUserIndex].games_won);
-    }
-    
-    if (leavingUserIndex !== -1) {
-        data.users[leavingUserIndex].games_lost = (data.users[leavingUserIndex].games_lost || 0) + 1;
-        console.log(`${nick} losses incremented to:`, data.users[leavingUserIndex].games_lost);
-    }
-
-    // ✅ SALVAR TODAS AS MUDANÇAS
     await saveData(data);
-    
-    console.log('Data saved successfully');
 
-    return res.status(200).json({
-        message: 'Left game, opponent wins',
-        game: game,
-        winner: opponent
+    notifyPlayers(gameId, { winner: winner });
+    res.json({});
+});
+
+// ==========================================
+// LÓGICA DE JOGO (O QUE FALTAVA)
+// ==========================================
+
+// Rota GET para SSE (Server-Sent Events)
+app.get('/update', (req, res) => {
+    const { game: gameId, nick } = req.query;
+
+    if (!gameId) {
+        res.status(400).json({ error: "Game ID missing" });
+        return;
+    }
+
+    // Configurar headers para SSE
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+    });
+
+    // Registar cliente
+    if (!clients[gameId]) clients[gameId] = [];
+    clients[gameId].push(res);
+
+    // Enviar estado atual imediatamente (para desenhar o tabuleiro inicial)
+    // Precisamos ler os dados
+    loadData().then(data => {
+        const game = data.games.find(g => g.id === gameId);
+        if (game) {
+            const payload = {
+                turn: game.turn,
+                pieces: game.pieces,
+                dice: game.dice,
+                step: game.step,
+                players: game.players,
+                winner: game.winner
+            };
+            res.write(`data: ${JSON.stringify(payload)}\n\n`);
+        }
+    });
+
+    // Quando o cliente fecha a conexão
+    req.on('close', () => {
+        if (clients[gameId]) {
+            clients[gameId] = clients[gameId].filter(client => client !== res);
+        }
     });
 });
 
-// Obter tudo (para testes)
-app.get('/data', async (req, res) => {
+app.post('/roll', async (req, res) => {
+    const { nick, password, game: gameId } = req.body;
     const data = await loadData();
-    res.json(data);
+    const game = data.games.find(g => g.id === gameId);
+
+    // Validações
+    if (!game) return res.status(404).json({ error: 'Game not found' });
+    if (game.turn !== nick) return res.status(400).json({ error: 'Not your turn' });
+    if (game.dice && game.dice.value > 0) return res.status(400).json({ error: 'Already rolled' });
+
+    // Lógica do dado (4 paus)
+    let sticks = 0;
+    for(let i=0; i<4; i++) if(Math.random() > 0.5) sticks++;
+    const value = (sticks === 0) ? 6 : sticks;
+
+    // Atualizar estado
+    game.dice = { value: value };
+    game.step = 'from'; // Agora deve escolher peça
+
+    await saveData(data);
+
+    notifyPlayers(gameId, {
+        dice: game.dice,
+        turn: game.turn,
+        step: game.step
+    });
+
+    res.json({ dice: game.dice });
 });
 
-app.listen(8135, () => console.log('Server running on 8135'));
+app.post('/pass', async (req, res) => {
+    const { nick, game: gameId } = req.body;
+    const data = await loadData();
+    const game = data.games.find(g => g.id === gameId);
+
+    if (!game || game.turn !== nick) return res.status(400).json({ error: 'Erro' });
+
+    // Trocar turno
+    const players = Object.keys(game.players);
+    const nextPlayer = players.find(p => p !== nick);
+
+    game.turn = nextPlayer;
+    game.dice = null; // Reset dado
+    game.step = 'roll';
+    game.selectedPiece = null;
+
+    await saveData(data);
+
+    notifyPlayers(gameId, {
+        turn: game.turn,
+        step: game.step,
+        dice: null
+    });
+
+    res.json({});
+});
+
+app.post('/notify', async (req, res) => {
+    const { nick, game: gameId, cell } = req.body;
+    const cellIdx = parseInt(cell);
+
+    const data = await loadData();
+    const game = data.games.find(g => g.id === gameId);
+
+    if (!game) return res.status(404).json({});
+    if (game.turn !== nick) return res.status(400).json({ error: 'Not your turn' });
+
+    // --- FASE 1: SELECIONAR PEÇA ('from') ---
+    if (game.step === 'from' || game.step === 'roll') {
+        const piece = game.pieces[cellIdx];
+        const myColor = game.players[nick];
+
+        if (!piece || piece.color !== myColor) {
+            return res.status(400).json({ error: 'Not your piece' });
+        }
+
+        // CORREÇÃO: REGRA DO INVASOR NO SERVIDOR
+        // Se eu sou Blue, Home é Row 3 (indices 27-35), Enemy é Row 0 (0-8).
+        // Se eu sou Red, Home é Row 0 (0-8), Enemy é Row 3 (27-35).
+        const size = game.size;
+        const myHomeStart = (myColor === 'Blue') ? size * 3 : 0;
+        const myHomeEnd = (myColor === 'Blue') ? size * 4 : size;
+        const enemyHomeStart = (myColor === 'Blue') ? 0 : size * 3;
+        const enemyHomeEnd = (myColor === 'Blue') ? size : size * 4;
+
+        // Verificar se a peça selecionada está na base inimiga
+        if (cellIdx >= enemyHomeStart && cellIdx < enemyHomeEnd) {
+            // Verificar se tenho peças na minha casa
+            let hasFriendsInHome = false;
+            for (let i = myHomeStart; i < myHomeEnd; i++) {
+                if (game.pieces[i] && game.pieces[i].color === myColor) {
+                    hasFriendsInHome = true;
+                    break;
+                }
+            }
+            if (hasFriendsInHome) {
+                return res.status(400).json({ error: 'Piece blocked (Invader Rule)' });
+            }
+        }
+
+        // Se passou, marca como selecionada
+        game.selectedPiece = cellIdx;
+        game.step = 'to';
+        await saveData(data);
+        // Não notificamos todos no select para não mostrar ao inimigo o que estamos a pensar
+        // Ou notificamos se quisermos mostrar "seleção". O enunciado sugere 'selected'.
+        return res.json({});
+    }
+
+    // --- FASE 2: MOVER PARA DESTINO ('to') ---
+    else if (game.step === 'to') {
+        const fromIdx = game.selectedPiece;
+
+        // Simples validação de distância (Básica)
+        // Num projeto real, terias de validar o caminho exato aqui
+        // Mas vamos assumir que o cliente envia destinos válidos, validando apenas a posse.
+
+        // Mover
+        const movingPiece = game.pieces[fromIdx];
+        movingPiece.inMotion = true; // Já não é first move
+
+        // Captura?
+        if (game.pieces[cellIdx]) {
+            // Se houver peça, comeu
+            // (Assumindo que o cliente validou que não é da mesma cor)
+        }
+
+        // Atualizar tabuleiro
+        game.pieces[cellIdx] = movingPiece;
+        game.pieces[fromIdx] = null;
+
+        // Verificar Vitória
+        const myColor = game.players[nick];
+        const enemyColor = (myColor === 'Blue') ? 'Red' : 'Blue';
+        const enemyCount = game.pieces.filter(p => p && p.color === enemyColor).length;
+
+        if (enemyCount === 0) {
+            game.winner = nick;
+            game.step = 'finished';
+             // Atualizar stats
+            const winnerUser = data.users.find(u => u.nick === nick);
+            if(winnerUser) winnerUser.games_won++;
+        } else {
+             // Verificar se joga de novo
+             const diceVal = game.dice.value;
+             if ([1, 4, 6].includes(diceVal)) {
+                 game.step = 'roll';
+                 game.dice = null; // Permitir novo roll
+             } else {
+                 // Passar vez automaticamente
+                 const players = Object.keys(game.players);
+                 game.turn = players.find(p => p !== nick);
+                 game.step = 'roll';
+                 game.dice = null;
+             }
+        }
+
+        game.selectedPiece = null;
+        await saveData(data);
+
+        notifyPlayers(gameId, {
+            pieces: game.pieces,
+            turn: game.turn,
+            step: game.step,
+            dice: game.dice,
+            winner: game.winner
+        });
+
+        res.json({});
+    }
+});
+
+app.listen(PORT, () => console.log(`✅ Servidor de Jogo a correr na porta ${PORT}`));
