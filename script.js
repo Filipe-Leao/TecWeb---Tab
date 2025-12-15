@@ -8,7 +8,7 @@ window.isPvP = false;
 // Configurações do Servidor
 const SERVER_URL = "http://twserver.alunos.dcc.fc.up.pt:8008";
 const LOCAL_SERVER_URL = "http://twserver.alunos.dcc.fc.up.pt:8135";
-const USE_LOCAL_SERVER = true;
+const USE_LOCAL_SERVER = false;
 const GROUP_ID = 35; // O teu ID de grupo
 
 // Estado do Utilizador e Jogo
@@ -72,8 +72,10 @@ const btnFecharClassificacoesJogo = document.getElementById('btnFecharClassifica
 // --- 3. API ---
 async function apiRequest(endpoint, data) {
     let url;
-    if ((endpoint === 'register' || endpoint === 'ranking') && USE_LOCAL_SERVER) {
-        console.log("Using data", data);
+
+    if (USE_LOCAL_SERVER) {
+    //if ((endpoint === 'register' || endpoint === 'ranking') && USE_LOCAL_SERVER) {
+        console.log("Connecting to endpoint:", endpoint,"Using data:", data);
         url = `${LOCAL_SERVER_URL}/${endpoint}`;
     } else {
         url = `${SERVER_URL}/${endpoint}`;
@@ -204,6 +206,7 @@ async function joinPvPGame() {
     const result = await apiRequest('join', data);
     if (result && result.game) {
         gameId = result.game;
+        console.log("Joined PvP Game ID:", gameId);
         startServerEvents(gameId);
     } else {
         showMessage("Erro ao entrar ou jogo em andamento.", 'error');
@@ -214,8 +217,13 @@ async function joinPvPGame() {
 }
 
 function startServerEvents(id) {
+    let url;
     if (eventSource) eventSource.close();
-    const url = `${SERVER_URL}/update?nick=${encodeURIComponent(userNick)}&game=${encodeURIComponent(id)}`;
+    if (USE_LOCAL_SERVER) {
+        url = `${LOCAL_SERVER_URL}/update?nick=${encodeURIComponent(userNick)}&game=${encodeURIComponent(id)}`;
+    } else {
+        url = `${SERVER_URL}/update?nick=${encodeURIComponent(userNick)}&game=${encodeURIComponent(id)}`;
+    }
     eventSource = new EventSource(url);
     eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);

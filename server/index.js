@@ -131,13 +131,15 @@ app.post('/join', async (req, res) => {
         await saveData(data);
 
         // Notificar o jogador que estava à espera via SSE
-        notifyPlayers(game.id, {
-            game: game.id,
-            players: game.players,
-            turn: game.turn,
-            pieces: game.pieces,
-            step: 'roll' // Reset step
-        });
+        setTimeout(() => {
+            notifyPlayers(game.id, {
+                game: game.id,
+                players: game.players,
+                turn: game.turn,
+                pieces: game.pieces,
+                step: 'roll'
+            });
+        }, 100);
 
         return res.json({ game: game.id });
     }
@@ -157,8 +159,8 @@ app.post('/join', async (req, res) => {
     const newGame = {
         id, group, size, pieces,
         players: { [nick]: 'Blue' },
-        turn: nick, // Quem cria começa? Ou waiting? Vamos por waiting.
-        step: 'roll',
+        turn: nick,
+        step: 'waiting',
         dice: null,
         winner: null,
         selectedPiece: null // Auxiliar para o notify
@@ -377,8 +379,8 @@ app.post('/notify', async (req, res) => {
 
         // Captura?
         if (game.pieces[cellIdx]) {
-            // Se houver peça, comeu
-            // (Assumindo que o cliente validou que não é da mesma cor)
+            // Remover peça capturada
+            game.pieces[cellIdx] = null;
         }
 
         // Atualizar tabuleiro
@@ -397,18 +399,20 @@ app.post('/notify', async (req, res) => {
             const winnerUser = data.users.find(u => u.nick === nick);
             if(winnerUser) winnerUser.games_won++;
         } else {
-             // Verificar se joga de novo
-             const diceVal = game.dice.value;
-             if ([1, 4, 6].includes(diceVal)) {
-                 game.step = 'roll';
-                 game.dice = null; // Permitir novo roll
-             } else {
-                 // Passar vez automaticamente
-                 const players = Object.keys(game.players);
-                 game.turn = players.find(p => p !== nick);
-                 game.step = 'roll';
-                 game.dice = null;
-             }
+            // Verificar se joga de novo
+            console.log(game.dice)
+            const diceVal = game.dice.value;
+            console.log(`Jogador ${nick} rolou ${diceVal}`);
+            if ([1, 4, 6].includes(diceVal)) {
+                game.step = 'roll';
+                game.dice = null; // Permitir novo roll
+            } else {
+                // Passar vez automaticamente
+                const players = Object.keys(game.players);
+                game.turn = players.find(p => p !== nick);
+                game.step = 'roll';
+                game.dice = null;
+            }
         }
 
         game.selectedPiece = null;
