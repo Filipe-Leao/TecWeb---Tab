@@ -4,7 +4,7 @@
 ![Express](https://img.shields.io/badge/Express-Server-blue?style=flat)
 ![Status](https://img.shields.io/badge/Status-Completed-success)
 
-Implementação digital do jogo de tabuleiro tradicional **Tâb**, desenvolvida no âmbito da disciplina de Tecnologias Web. O projeto apresenta uma arquitetura Cliente-Servidor robusta, suportando jogos em tempo real e inteligência artificial.
+Implementação digital do jogo de tabuleiro tradicional **Tâb**, desenvolvida no âmbito da disciplina de Tecnologias Web. O projeto apresenta uma arquitetura Cliente-Servidor robusta, suportando o jogo TAB em tempo real ou contra um modelo MCTS.
 
 ## 🚀 Funcionalidades
 
@@ -82,10 +82,3 @@ O objetivo é capturar todas as peças do adversário.
 3.  **Captura:** Se aterrar numa casa ocupada pelo adversário, a peça dele é removida.
 4.  **Invasão:** Não pode mover uma peça que já invadiu a base inimiga enquanto ainda tiver peças na sua própria base ("Regra do Invasor").
 5.  **Jogar Novamente:** Se tirar 1, 4 ou 6 no dado, joga novamente.
-
----
-
-## 👥 Autores
-
-* **Grupo 35**
-* Tecnologias Web - DCC/FCUP

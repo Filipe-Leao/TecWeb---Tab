@@ -216,8 +216,6 @@ async function joinPvPGame() {
         startServerEvents(gameId);
     } else {
         showMessage("Erro ao entrar ou jogo em andamento.", 'error');
-        // Se falhar o join, tenta reconectar se já existir ID? 
-        // Por simplicidade, voltamos ao menu.
         setTimeout(() => { gamePage.classList.add('oculto'); configPanel.classList.remove('oculto'); }, 2000);
     }
 }
@@ -268,7 +266,6 @@ function updateBoardFromServer(data) {
         myServerColor = myColorName ? myColorName.toLowerCase() : 'blue';
         boardElement.classList.remove('board-rotated');
     }
-    // ----------------------------------------------------
 
     if (data.pieces) {
         renderServerPiecesWithMirror(data.pieces);
@@ -466,7 +463,6 @@ async function serverMove(row, col) {
     // 2. Inverter Zig-Zag
     // O zig-zag depende da linha visual ou da linha servidor?
     // Na renderização: if (r_visual === 0 || r_visual === 2) inverte.
-    // Logo, aqui usamos a linha VISUAL (row) para decidir.
     let c_server = col;
     if (row === 0 || row === 2) {
         c_server = (window.BOARD_SIZE - 1) - col;
